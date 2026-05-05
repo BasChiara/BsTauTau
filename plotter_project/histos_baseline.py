@@ -4,6 +4,7 @@
 import ROOT
 
 histos = dict()
+histos_test = dict() # only few to test
 
 histos_flavor = dict()
 
@@ -89,6 +90,7 @@ histos_general['PuppiMET_pt'] = (ROOT.RDF.TH1DModel('PuppiMET_pt', '', 30, 0, 20
 histos['mu'] = dict()
 histos['e'] = dict()
 histos['emu'] = dict()
+histos_test['emu'] = dict()
 histos['mumu'] = dict()
 histos['ee'] = dict()
 
@@ -97,7 +99,7 @@ histos_general_e = dict()
 histos_general_e['e1_pt'] = (ROOT.RDF.TH1DModel('e1_pt', '', 20, 0, 200), 'Electron 1 pt', 1)
 histos_general_e['e1_eta'] = (ROOT.RDF.TH1DModel('e1_eta', '', 20, -2.5, 2.5), 'Electron 1 eta', 1)
 histos_general_e['e1_phi'] = (ROOT.RDF.TH1DModel('e1_phi', '', 20, -3.14, 3.14), 'Electron 1 phi', 1)
-histos_general_e['e1_dxy'] = (ROOT.RDF.TH1DModel('e1_dxy', '', 20, -0.05, 0.05), 'Electron 1 dxy', 1)
+histos_general_e['e1_dxy'] = (ROOT.RDF.TH1DModel('e1_dxy', '', 20, -0.02, 0.02), 'Electron 1 dxy', 1)
 histos_general_e['e1_dz'] = (ROOT.RDF.TH1DModel('e1_dz', '', 20, -0.1, 0.1), 'Electron 1 dz', 1)
 histos_general_e['e1_charge'] = (ROOT.RDF.TH1DModel('e1_charge', '',3, -1.5, 1.5), 'Electron 1 charge', 1)
 histos_general_e['MT_e1_MET'] = (ROOT.RDF.TH1DModel('MT_e1_MET', '',50, -10, 150), 'MT', 1)
@@ -135,6 +137,7 @@ histos['mu'].update(histos_general_mu)
 histos['e'].update(histos_general_e)
 histos['emu'].update(histos_general_e)
 histos['emu'].update(histos_general_mu)
+histos_test['emu'].update(histos_general_e)
 histos['mumu'].update(histos_general_mu)
 histos['ee'].update(histos_general_e)
 

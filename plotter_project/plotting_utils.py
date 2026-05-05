@@ -1,4 +1,5 @@
 import ROOT
+import math
 from datetime import datetime
 from cmsstyle import CMS_lumi
 from officialStyle import officialStyle
@@ -36,12 +37,33 @@ def create_canvas_with_pads():
     return c1, main_pad, ratio_pad
 
 def initialize_histograms(histos, samples, ch):
+    print(' > initialize histograms')
     temp_hists = {}
+    
     for k, v in histos[ch].items():
         temp_hists[k] = {}
+        print(f'\t branch {k}')
         for kk, vv in samples[ch].items():
             branch_name = k
+            print(f'\t\t sample {kk}') 
             temp_hists[k][f'{k}_{kk}'] = vv.Histo1D(v[0], branch_name, 'tot_weight')
+            
+            # stat + systematic error
+            if 'data' in kk: continue
+            tmp_histUp   = vv.Histo1D(v[0], branch_name, 'tot_weightUp')
+            tmp_histDown = vv.Histo1D(v[0], branch_name, 'tot_weightDown')
+            for ibin in range(temp_hists[k][f'{k}_{kk}'].GetNbinsX()):
+                
+                ths_sys  = abs(tmp_histUp.GetBinContent(ibin+1) - tmp_histDown.GetBinContent(ibin+1)) 
+                ths_stat = temp_hists[k][f'{k}_{kk}'].GetBinError(ibin+1)
+                ths_err = math.sqrt(ths_stat**2 + ths_sys**2)
+                
+                #print(f'\t\t\t{ibin+1} {temp_hists[k][f'{k}_{kk}'].GetBinContent(ibin+1):.3f} +/- {ths_sys:.3f} (sys) +/- {ths_stat:.3f} (stat)')
+                if math.isnan(ths_err): print('WARNING - nan in the error')
+                temp_hists[k][f'{k}_{kk}'].SetBinError(ibin+1, ths_err )
+            
+            tmp_histUp.Clear()
+            tmp_histDown.Clear()
     return temp_hists
 
 
@@ -133,6 +155,7 @@ def create_histogram_stacks(temp_hists, k, blinding):
         # CRITICAL: Clone the histogram for display only - don't modify the original
         display_hist = ihist.GetValue().Clone(f"{key}_display")
         
+        
         # Apply blinding ONLY to the display clone, not the original
         if should_apply_blinding(k) and blinding:
             apply_data_blinding_to_histogram(display_hist, k)
@@ -160,6 +183,7 @@ def draw_stat(ths1):
 def style_and_draw_bstautau(temp_hists, k, ths1, colours, scale_to_mc=True):
     hist = temp_hists[k][f'{k}_bstautau']
     hist.SetFillColor(0)
+    hist.SetMarkerSize(0)
     hist.SetLineColor(colours['bstautau'])
     hist.SetMarkerColor(colours['bstautau'])
     #print("BsTauTau histogram integral:", hist.Integral(),k)
@@ -320,7 +344,8 @@ def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, 
             data_integral = data_ths.GetStack().Last().Integral()
             #print(f"Data histogram integral for {k}: {data_integral:.1f}")
 
-        leg.AddEntry(stats, 'stat. unc.', 'F')
+        #leg.AddEntry(stats, 'stat. unc.', 'F')
+        leg.AddEntry(stats, 'tot. unc.', 'F')
         leg.Draw('same')
 
         # CRITICAL: Save histograms to ROOT file BEFORE any scaling to preserve original integrals
