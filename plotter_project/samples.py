@@ -1,13 +1,53 @@
 import ROOT
 
+# -- years of data taking
+# https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2#Luminosity_for_pp_13_TeV_data_20
+
+luminosity = { # in fb-1
+    '2016' : {
+        'B_ver1' : -1,
+        'B_ver2' : -1,
+        'C' : -1,
+        'D' : -1,
+        'E' : -1,
+        'total' : 36.33
+    },
+    '2017' : {
+        'B' : -1,
+        'C' : -1,
+        'D' : -1,
+        'E' : -1,
+        'F' : -1,
+        'total' : 41.53
+    },
+    '2018' : {
+        'A' : -1,
+        'B' : -1,
+        'C' : -1,
+        'D' : -1,
+        'total' : 59.74
+    },
+}
+years = list(luminosity.keys())
+eras = dict()
+[eras.update({year:list(luminosity[year].keys()).remove('total')}) for year in years]
+
+luminosity['Run2'] ={'total' : luminosity['2016']['total'] + luminosity['2017']['total'] + luminosity['2018']['total']}
+
+# FXME : remove
 eras_2018 = ['A','B','C','D']
+luminosity_2018 = 59.7 # in fb-1
+
+# -- samples
 
 data_samples_names = {
     'mu':['data_sm'],
     'e':['data_eg'],
-    'emu':['data_sm','data_eg','data_meg'],
+    'emu': ['data_sm','data_eg','data_meg'],
     'mumu':['data_sm','data_dm'],
-    'ee':['data_eg']}
+    'ee':['data_eg']
+}
+channels = list(data_samples_names.keys())
 
 mc_samples_names = [
     'tt_fullylep',
@@ -17,7 +57,7 @@ mc_samples_names = [
     'wz',
     'zz',
     'st_s',
-    #'st_t',
+    #'st_t', # FIXME : to be re-intro
     'st_antit',
     'st_tw',
     'st_antitw',
@@ -25,7 +65,7 @@ mc_samples_names = [
     'wext',
     'dy',
     'bstautau',
-    #'dyext'
+    #'dyext' 
 ]
 
 files_names = dict()
@@ -50,10 +90,9 @@ files_names['st_tw'] = 'ST_tW'
 files_names['st_antitw'] = 'ST_tW_antitop'
 files_names['bstautau'] = 'ttbarToBsToTauTau'
 
+
+
 #https://twiki.cern.ch/twiki/bin/viewauth/CMS/XsdbTutorialSep#TTbar
-
-luminosity_2018 = 59.7 # in fb-1
-
 #https://twiki.cern.ch/twiki/bin/viewauth/CMS/SummaryTable1G25ns#Diboson
 cross_sections = {
     "tt_semilep": 366.29,      # in pb
@@ -71,7 +110,7 @@ cross_sections = {
     "st_antit": 26.38,         # in pb  # CHECKKK
     "st_tw": 35.85,            # in pb  # CHECKKK
     "st_antitw": 35.85,        # in pb  # CHECKKK
-    "bstautau": 830 * 2 * 0.1 * 6.8 * 0.001 *10,        ## 10 times LHCb
+    "bstautau": 830 * 2 * 0.1 * 6.8 * 0.001 *10,        ## xsec(ttbar) * #b * fs * Br(Bs->tautau) (10 times LHCb)
 }
 
 

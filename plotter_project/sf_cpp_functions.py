@@ -1,25 +1,33 @@
 import ROOT
-def declare_sfs_cpp_functions():
-    ROOT.gInterpreter.Declare('auto csetEl = correction::CorrectionSet::from_file("sfs/electron.json");')
-    ROOT.gInterpreter.Declare('auto csetEl_2018 = csetEl->at("UL-Electron-ID-SF");')
-    ROOT.gInterpreter.Declare('auto csetMu = correction::CorrectionSet::from_file("sfs/muon_Z.json");')
-    ROOT.gInterpreter.Declare('auto csetMu_id = csetMu->at("NUM_TightID_DEN_genTracks");')
-    ROOT.gInterpreter.Declare('auto csetMu_iso = csetMu->at("NUM_TightRelIso_DEN_TightIDandIPCut");')
-    ROOT.gInterpreter.Declare('auto csetMu_trg = csetMu->at("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight");')
-
-    ROOT.gInterpreter.Declare('auto csetBtag = correction::CorrectionSet::from_file("sfs/btagging.json");')
+def declare_sfs_cpp_functions(year='2018'):
+    #
+    # ----- SF INPUTS ----- #
+    #
+    #  ELECTRONS #
+    ROOT.gInterpreter.Declare('auto csetEl      = correction::CorrectionSet::from_file("sfs/electron.json");')
+    ROOT.gInterpreter.Declare('auto csetEl_all  = csetEl->at("UL-Electron-ID-SF");')
+    # MUONS #
+    ROOT.gInterpreter.Declare('auto csetMu      = correction::CorrectionSet::from_file("sfs/muon_Z.json");')
+    ROOT.gInterpreter.Declare('auto csetMu_id   = csetMu->at("NUM_TightID_DEN_genTracks");')
+    ROOT.gInterpreter.Declare('auto csetMu_iso  = csetMu->at("NUM_TightRelIso_DEN_TightIDandIPCut");')
+    ROOT.gInterpreter.Declare('auto csetMu_trg  = csetMu->at("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight");')
+    # B-TAGGING #
+    ROOT.gInterpreter.Declare('auto csetBtag        = correction::CorrectionSet::from_file("sfs/btagging.json");')
     ROOT.gInterpreter.Declare('auto csetBtag_mujets = csetBtag->at("deepJet_mujets");')
-    ROOT.gInterpreter.Declare('auto csetBtag_incl = csetBtag->at("deepJet_incl");')
+    ROOT.gInterpreter.Declare('auto csetBtag_incl   = csetBtag->at("deepJet_incl");')
 
+    #
+    # ----- SF Functions ----- #
+    #
 
-
+    # di-lepton trigger SFs
     ROOT.gInterpreter.Declare("""
         TFile* mumu_trg_sf_file = nullptr;
         TH2F* sfshisto_mumu = nullptr;
 
-        void load_sfshistomumu() {
+        void load_sfshistomumu(TString year = "2018") {
             if (mumu_trg_sf_file == nullptr) {
-                mumu_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_2018.root", "READ");
+                mumu_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_"+year+".root", "READ");
                 if (!mumu_trg_sf_file || !mumu_trg_sf_file->IsOpen()) {
                     std::cerr << "Error: File not found or unable to open!" << std::endl;
                 }
@@ -30,23 +38,26 @@ def declare_sfs_cpp_functions():
             }
         }
 
-        double get_mumu_trigger_sf(double e1_pt, double mu1_pt) {
+        double get_mumu_trigger_sf(double e1_pt, double mu1_pt, TString year = "2018", bool uncertainty = false) {
             if (sfshisto_mumu == nullptr) {
                 load_sfshistomumu();
             }
             int bin_x = sfshisto_mumu->GetXaxis()->FindBin(e1_pt);
             int bin_y = sfshisto_mumu->GetYaxis()->FindBin(mu1_pt);
-            return sfshisto_mumu->GetBinContent(bin_x, bin_y);
+            if (!uncertainty) {
+                return sfshisto_mumu->GetBinContent(bin_x, bin_y);
+            } else {
+                return sfshisto_mumu->GetBinError(bin_x, bin_y);
+            }
         }
     """)
-
     ROOT.gInterpreter.Declare("""
         TFile* emu_trg_sf_file = nullptr;
         TH2F* sfshisto_emu = nullptr;
 
-        void load_sfshisto() {
+        void load_sfshisto(TString year = "2018") {
             if (emu_trg_sf_file == nullptr) {
-                emu_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_2018.root", "READ");
+                emu_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_"+year+".root", "READ");
                 if (!emu_trg_sf_file || !emu_trg_sf_file->IsOpen()) {
                     std::cerr << "Error: File not found or unable to open!" << std::endl;
                 }
@@ -57,22 +68,26 @@ def declare_sfs_cpp_functions():
             }
         }
 
-        double get_emu_trigger_sf(double e1_pt, double mu1_pt) {
+        double get_emu_trigger_sf(double e1_pt, double mu1_pt, TString year = "2018", bool uncertainty = false) {
             if (sfshisto_emu == nullptr) {
                 load_sfshisto();
             }
             int bin_x = sfshisto_emu->GetXaxis()->FindBin(e1_pt);
             int bin_y = sfshisto_emu->GetYaxis()->FindBin(mu1_pt);
-            return sfshisto_emu->GetBinContent(bin_x, bin_y);
+            if (!uncertainty){
+                return sfshisto_emu->GetBinContent(bin_x, bin_y);
+            } else {
+                return sfshisto_emu->GetBinError(bin_x, bin_y);
+            }
         }
     """)
     ROOT.gInterpreter.Declare("""
         TFile* ee_trg_sf_file = nullptr;
         TH2F* sfshisto_ee = nullptr;
 
-        void load_sfshisto_ee() {
+        void load_sfshisto_ee(TString year = "2018") {
             if (ee_trg_sf_file == nullptr) {
-                ee_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_2018.root", "READ");
+                ee_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_+year+.root", "READ");
                 if (!ee_trg_sf_file || !ee_trg_sf_file->IsOpen()) {
                     std::cerr << "Error: File not found or unable to open!" << std::endl;
                 }
@@ -83,22 +98,26 @@ def declare_sfs_cpp_functions():
             }
         }
 
-        double get_ee_trigger_sf(double e1_pt, double e2_pt) {
+        double get_ee_trigger_sf(double e1_pt, double e2_pt, TString year = "2018", bool uncertainty = false) {
             if (sfshisto_ee == nullptr) {
                 load_sfshisto_ee();
             }
             int bin_x = sfshisto_ee->GetXaxis()->FindBin(e1_pt);
             int bin_y = sfshisto_ee->GetYaxis()->FindBin(e2_pt);
-            return sfshisto_ee->GetBinContent(bin_x, bin_y);
+            if (!uncertainty){
+                return sfshisto_ee->GetBinContent(bin_x, bin_y);
+            } else {
+                return sfshisto_ee->GetBinError(bin_x, bin_y);
+            }
         }
     """)
     ROOT.gInterpreter.Declare("""
         TFile* single_e_trg_sf_file = nullptr;
         TH2F* sfshisto_single_e = nullptr;
 
-        void load_sfshisto_single_e() {
+        void load_sfshisto_single_e(TString year = "2018") {
             if (single_e_trg_sf_file == nullptr) {
-                single_e_trg_sf_file = TFile::Open("sfs/electron_trigger_2018.root", "READ");
+                single_e_trg_sf_file = TFile::Open("sfs/electron_trigger_"+year+".root", "READ");
                 if (!single_e_trg_sf_file || !single_e_trg_sf_file->IsOpen()) {
                     std::cerr << "Error: File not found or unable to open!" << std::endl;
                 }
@@ -109,15 +128,21 @@ def declare_sfs_cpp_functions():
             }
         }
 
-        double get_single_e_trigger_sf(double e1_pt, double e1_eta) {
+        double get_single_e_trigger_sf(double e1_pt, double e1_eta, TString year = "2018", bool uncertainty = false) {
             if (sfshisto_single_e == nullptr) {
                 load_sfshisto_single_e();
             }
             int bin_x = sfshisto_single_e->GetXaxis()->FindBin(e1_eta);
             int bin_y = sfshisto_single_e->GetYaxis()->FindBin(e1_pt);
-            return sfshisto_single_e->GetBinContent(bin_x, bin_y);
+            if (!uncertainty){
+                return sfshisto_single_e->GetBinContent(bin_x, bin_y);
+            } else {
+                return sfshisto_single_e->GetBinError(bin_x, bin_y);
+            }
         }
     """)
+    
+    # top pT re-weighting in ttbar
     ROOT.gInterpreter.Declare("""
         float top_ptweight(ROOT::RVecF genPart_pt, ROOT::RVecI genPart_pdgId) {
             float gentoppt = -1.0, genantitoppt = -1.0;
@@ -317,3 +342,68 @@ def declare_sfs_cpp_functions():
          return weight;
     }
     """)
+
+def combine_insert_weight(
+    sample,
+    w_name,
+    sf_branches,
+    unc_branches=None,
+    make_variations=True,
+    debug = False
+):
+    """
+    Define :
+        w_name -> nominal weight, combination of all the SFs in sf_branches
+        w_nameUnc -> uncertainty on the weight, combination of all the uncertainties in unc_branches
+        w_nameUp ->  w_name + w_nameUnc
+        w_nameDown -> w_name - w_nameUnc
+
+    in sample, assuming independent uncertainties, and that the variations are symmetric.
+    """
+    
+    if unc_branches is None:
+        unc_branches = [b + "Unc" for b in sf_branches]
+    
+    # SF branch not found -> ERROR
+    # SF-uncertainty branch not found -> WARNING, define it as 0.0
+    for b in sf_branches:
+        if b not in sample.GetColumnNames():
+            raise ValueError(f"SF branch '{b}' not found in sample")
+    for b in unc_branches:
+        if b not in sample.GetColumnNames():
+            print(f"Warning: Uncertainty branch '{b}' not found in sample, setting it to 0.0")
+            sample = sample.Define(b, "0.0")
+    if len(sf_branches) != len(unc_branches):
+        raise ValueError("sf_branches and unc_branches must have the same length")
+
+    # nominal combination
+    weight_expr = "*".join(sf_branches)
+    if debug: print(f"Nominal weight expression: {weight_expr}")
+    sample = sample.Define(w_name, weight_expr)
+
+    # relative unc. squared
+    unc_terms = [
+        "({0}/{1})*({0}/{1})".format(unc, sf) for sf, unc in zip(sf_branches, unc_branches)
+    ]
+    unc_expr = w_name + "*sqrt(" + "+".join(unc_terms) + ")"
+    if debug: print(f"Uncertainty expression: {unc_expr}")
+    sample = sample.Define(w_name + "Unc", unc_expr)
+
+    if make_variations:
+        sample = sample.Define(w_name + "Up", w_name + " + " + w_name + "Unc")
+        sample = sample.Define(w_name + "Down", w_name + " - " + w_name + "Unc")
+    
+    return sample
+
+def quadrature_sum_expr(string_list):
+    if len(string_list) == 0:
+        return ""
+    elif len(string_list) == 1:
+        return string_list[0]
+    else:
+        terms = ["({0}*{0})".format(s) for s in string_list]
+        return "sqrt(" + "+".join(terms) + ")"
+
+def syst_fromvar_expr(varup, vardown):
+
+    return "0.5*abs({0} - {1})".format(varup, vardown)

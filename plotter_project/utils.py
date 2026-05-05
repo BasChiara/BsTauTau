@@ -1,5 +1,6 @@
 import ROOT
 from definition_cpp_functions import *
+import sf_cpp_functions as sf_cpp
 
 
 jet_attributes_global = [
@@ -300,8 +301,6 @@ def define_invariant_mass_and_mt(samples,ch):
     return samples
 
 
-
-
 def build_weight_string(k, files_names, options):
     """
     Constructs a weight expression string based on sample name and options.
@@ -330,6 +329,24 @@ def build_weight_string(k, files_names, options):
         weight_terms.extend(['tot_sf_weight', 'btag_event_weight']) #both SF and btagging SFs are applied
 
     return '*'.join(weight_terms)
+
+def define_total_weight(sample, k, files_names, options):
+    """
+    Defines the total event weight for a given sample.
+
+    Args:
+        sample: The RDataFrame containing the sample data.
+        k (str): Sample key.
+        files_names (dict): Mapping of sample keys to filenames.
+        options (dict): Dict of flags like compute_sfs, use_ntuples_with_sfs, etc.
+
+    Returns:
+        Updated RDataFrame with a new column 'total_weight'.
+    """
+    weight_expression = build_weight_string(k, files_names, options).split('*')
+    sample = sf_cpp.combine_insert_weight(sample, 'tot_weight', weight_expression, make_variations=True)
+
+    return sample
 
 
 

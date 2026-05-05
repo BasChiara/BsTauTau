@@ -4,7 +4,8 @@
 Data is not well saved in the root file if you don't run with --noblinding option'''
 from datetime import datetime
 from io_utils import *
-from samples import *
+#from samples import *
+import samples as info_samples
 from selection import *
 from weights import *
 from sf_electron import *
@@ -53,6 +54,7 @@ else:
 def parse_arguments():
     parser = argparse.ArgumentParser(description="BsTauTau Plotter")
     parser.add_argument('--channels', nargs='+', default=['emu'], help='Channels to process')
+    parser.add_argument('--year', default='2018', choices=info_samples.years, type = str, help='Year of data taking')
     parser.add_argument('--flavor', action='store_true', default=False, help='Enable flavor-based histograms')
     parser.add_argument('--make_histos', action='store_true', default=False, help='Enable sample-based histograms')
     parser.add_argument('--noblinding', action='store_true', default=False, help='Disable blinding')
@@ -61,18 +63,18 @@ def parse_arguments():
     parser.add_argument('--compute_sfs', action='store_true', default=False, help='Save snapshots with scale factors (run again for plotting)')
     parser.add_argument('--compute_btag_sfs', action='store_true', default=False, help='Save snapshots with b-tag scale factors (run again for plotting)')
     parser.add_argument('--use_ntuples_with_sfs', action='store_true', default=False, help='Use ntuples with scale factors')
-    parser.add_argument('--use_ntuples_with_btag_sfs', action='store_true', default=True, help='Use ntuples with b-tag scale factors')
+    parser.add_argument('--use_ntuples_with_btag_sfs', action='store_true', default=False, help='Use ntuples with b-tag scale factors') #always use b-tag scale factors ??
     parser.add_argument('--plot_all_jets', action='store_true', default=False, help='Plot all b-tagged jets instead of just top 2 by pT')
     parser.add_argument('--save_filtered_data', action='store_true', default=False, help='Save filtered/processed data for faster reprocessing')
     parser.add_argument('--use_filtered_data', action='store_true', default=False, help='Use previously saved filtered data instead of processing from scratch')
     parser.add_argument('--plot_part_selections', action='store_true', default=False, help='Enable ParT sequential cuts plots (ParTRawTauhtaumu_frac > 0.6)')
+    parser.add_argument('--test', action='store_true', default=False, help='Run a quick test with onbly signal sample')
     return parser.parse_args()
 
 tau_scores = ['ParTRawTauhtauh', 'ParTRawTauhtaumu', 'ParTRawTauhtaue']
 bkg_scores = ['ParTRawB', 'ParTRawC', 'ParTRawOther', 'ParTRawSingletau']
 parT_scores = tau_scores + bkg_scores
 
-declare_sfs_cpp_functions()
 
 
 def main():
@@ -82,6 +84,7 @@ def main():
     args = parse_arguments()
     channels = args.channels
     channels = channels[0].split(',')
+    year = args.year
     print("---- Processing channels: ", channels)
     no_sfs = args.no_sfs
     compute_sfs = args.compute_sfs #Compute lepton SFs
@@ -97,8 +100,12 @@ def main():
     use_filtered_data = args.use_filtered_data
     plot_part_selections = args.plot_part_selections
     
-    # Create plot directories
-    make_directories_for_plots(label, channels)
+    
+    # Initialize SFs
+    declare_sfs_cpp_functions(year)
+    
+    # Create plot directories --> move later
+    if make_histos : make_directories_for_plots(label, channels)
 
     samples = dict()
     tree_name = 'Events'
@@ -106,7 +113,7 @@ def main():
     load_invmass()
     load_sorting_functions()
     for ch in channels:
-        print("=============================")
+        print("\n=============================")
         print(f"========= Channel {ch} ========")
         print("=============================")
 
@@ -116,47 +123,51 @@ def main():
             tree_dir_wsfs= None
             tree_dir_btag_sfs = None
             tree_dir_filtered = None
-            files_names['tt_semilep'] = 'TTToSemiLeptonic'
-            files_names['st_tw'] = 'ST_tW_top'
+            info_samples.files_names['tt_semilep'] = 'TTToSemiLeptonic'
+            info_samples.files_names['st_tw'] = 'ST_tW_top'
             # Remove 'bstautau' from mc_samples_names if present
-            used_mc_samples_names = [name for name in mc_samples_names if name != 'bstautau']
+            used_mc_samples_names = [name for name in info_samples.mc_samples_names if name != 'bstautau']
             
         else:
-            tree_dir = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
-            tree_dir_wsfs = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT/wsfs_snapshots'%(ch)
-            tree_dir_btag_sfs = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT/btag_sfs_snapshots'%(ch)
-            tree_dir_filtered = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT/filtered_data_snapshots'%(ch)
-            used_mc_samples_names = mc_samples_names  # Use all MC samples including 'bstautau'
+            tree_dir          = '/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
+            #tree_dir          = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
+            tree_dir_wsfs     = './wsfs_snapshots/'#%(tree_dir)
+            tree_dir_btag_sfs = '%s/btag_sfs_snapshots/'%(tree_dir)
+            tree_dir_filtered = '%s/filtered_data_snapshots/'%(tree_dir)
+            used_mc_samples_names = info_samples.mc_samples_names[-1:]  # Use all MC samples including 'bstautau'
 
+        print(f"Using tree directory: {tree_dir}")
         samples[ch] = dict()
 
         # Handle MC samples
-        print("====== Loading MC Samples ======")
-        mc_samples = load_mc_samples(ch, used_mc_samples_names, files_names, tree_name, tree_dir, tree_dir_wsfs, tree_dir_btag_sfs, luminosity_2018, cross_sections, trigger_selections, use_ntuples_with_sfs, compute_btag_sfs, use_ntuples_with_btag_sfs, part_samples, nevents)
+        print("\n====== Loading MC Samples ======")
+        mc_samples = load_mc_samples(ch, used_mc_samples_names, info_samples.files_names, tree_name, tree_dir, tree_dir_wsfs, tree_dir_btag_sfs, info_samples.luminosity_2018, info_samples.cross_sections, trigger_selections, use_ntuples_with_sfs, compute_btag_sfs, use_ntuples_with_btag_sfs, part_samples, nevents)
         samples[ch].update(mc_samples)
 
         # Handle data samples
-        print("====== Loading Data Samples ======")
-        data_samples, chains = load_data_samples(ch, data_samples_names, files_names, tree_name, tree_dir, trigger_selections, trigger_exclusions, eras_2018, nevents, use_filtered_data, tree_dir_filtered)
+        print("\n====== Loading Data Samples ======")
+        data_samples, chains = load_data_samples(ch, info_samples.data_samples_names, info_samples.files_names, tree_name, tree_dir, trigger_selections, trigger_exclusions, info_samples.eras_2018, nevents, use_filtered_data, tree_dir_filtered)
         samples[ch].update(data_samples)
-
+        
+        print("\n====== Processing Samples ======")
         for k, v in samples[ch].items():
-
+           
+            #print(f" > {k}")
             minimum_jet_conditions = '(j_pt > 20 & abs(j_eta)< 2.5 & j_jetid>=2)' # jet pt >20 for btagging SFs
 
             if 'bstautau' in k:
                 bstautau_conditions = {
-                    "general": "SigJetMask",
-                    "tauhtauh": "SigJetMaskTauhtauh",
-                    "tauhtaue": "SigJetMaskTauhtaue",
-                    "tauhtaumu": "SigJetMaskTauhtaumu"
+                    "general":      "SigJetMask",
+                    "tauhtauh":     "SigJetMaskTauhtauh",
+                    "tauhtaue":     "SigJetMaskTauhtaue",
+                    "tauhtaumu":    "SigJetMaskTauhtaumu"
                 }
             else:
                 bstautau_conditions = None
 
             #!!!!! MC snapshots already saved and these branches already defined. Be careful if changing jet selections this needs to rerun!!!
             if (not compute_btag_sfs and not use_ntuples_with_sfs and not use_ntuples_with_btag_sfs and not 'data' in k) or (not use_filtered_data and 'data' in k):
-
+                print(f"\t + defining new branches")
                 samples[ch][k] = define_invariant_mass_and_mt(samples[ch][k],ch)
 
                 # Define jet branches
@@ -180,6 +191,7 @@ def main():
                 # Filter the samples
                 filter = preselection[ch]
                 samples[ch][k] = samples[ch][k].Filter(filter)
+                print(f"\t + applying preselection filter: {filter}")
 
                 samples[ch][k] = samples[ch][k].Filter(f"ROOT::VecOps::Any({minimum_jet_conditions})")
                 if 'bstautau' in k:
@@ -189,19 +201,19 @@ def main():
             # First compute Sfs, after rerun to compute btagging SFs, after rerun for plotting
             # Compute Scale Factors if requested
             if compute_sfs and 'data' not in k:
-                print(f"Computing scale factors for sample {k} in channel {ch}")
-                samples[ch][k] = compute_all_scale_factors(samples[ch][k], ch, k, files_names)
+                print(f"[SFs] computing scale factors for sample {k} in channel {ch}")
+                samples[ch][k] = compute_all_scale_factors(samples[ch][k], ch, year, k, info_samples.files_names)
 
                 ## Specify a custom output directory for saving snapshots
-                output_dir = f"{tree_dir}/wsfs_snapshots/"
+                output_dir = tree_dir_wsfs
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 
-                save_samples_with_sfs(samples[ch][k], ch, k, files_names, output_dir=output_dir)
+                save_samples_with_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
 
             # Compute B-tagging Scale Factors separately if requested
             if compute_btag_sfs and 'data' not in k:
-                print(f"Computing b-tagging scale factors for sample {k} in channel {ch}")
+                print(f"[b-tag SFs] computing b-tagging scale factors for sample {k} in channel {ch}")
                 if ch == 'mu': # btagging condition is medium for channel mu
                     samples[ch][k] = compute_btagging_scale_factors(samples[ch][k], ch, "M")
                     samples[ch][k] = compute_btagging_event_weight(samples[ch][k], ch, "M")
@@ -212,23 +224,22 @@ def main():
 
 
                 ## Specify a custom output directory for saving snapshots
-                output_dir = f"{tree_dir}/btag_sfs_snapshots/"
+                output_dir = tree_dir_btag_sfs
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
 
                 #plot_event_weight_2d(samples[ch][k], 'sfs_plots/')
-                save_samples_with_btagging_sfs(samples[ch][k], ch, k, files_names, output_dir=output_dir)
+                save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
 
 
-
+            # FIXME : this part does not work
             # Save filtered data if requested (ONLY for data samples, MC samples are skimmed already after SF computation)
             if save_filtered_data and 'data' in k:
                 print(f"Saving filtered data for sample {k} in channel {ch}")
                 
                 ## Use the new save function that handles eras properly
-                output_dir = f"{tree_dir}/filtered_data_snapshots"
-                save_filtered_data_snapshot(samples[ch][k], ch, k, files_names, output_dir)
-
+                output_dir = tree_dir_filtered
+                save_filtered_data_snapshot(samples[ch][k], ch, k, info_samples.files_names, output_dir)
 
 
             # Define histogram-specific b-tagging branches AFTER filtering (won't be in snapshots)
@@ -237,10 +248,12 @@ def main():
             if 'bstautau' in k:
                 samples[ch][k] = define_bstautau_taudecaymodes_mask(samples[ch][k])
             
+            # Define  total event-weight
             if 'data' not in k:
-                weight_str = build_weight_string(k, files_names, args)
+                #weight_str = build_weight_string(k, info_samples.files_names, args)
                 #print(f"Applying weights to {k}: {weight_str}")
-                samples[ch][k] = samples[ch][k].Define('tot_weight', weight_str)
+                #samples[ch][k] = samples[ch][k].Define('tot_weight', weight_str)
+                samples[ch][k] = define_total_weight(samples[ch][k], k, info_samples.files_names, args)
 
 
             if part_samples: #using updated samples with part scores
@@ -270,7 +283,7 @@ def main():
                     samples[ch][k] = define_max_scores(samples[ch][k], parT_scores, 'bstautau' in k, bstautau_conditions)
                     histos[ch].update(histos_max_scores)
                     #histos_flavor[ch].update(histos_max_scores) Not really easy to do because they are filtered in a weird way and I would need to define also hadronFlavor with the same filter
-
+        
         print("##### Creating Histogram Definitions #####")
         # Initialize all histogram definitions BEFORE processing (lazy setup)
         temp_hists = None
@@ -289,11 +302,11 @@ def main():
         
         if make_histos and temp_hists:
             print("Processing sample-based histograms...")
-            process_histograms(histos, temp_hists, samples, ch, colours, label, titles, main_pad, ratio_pad, c1, blinding)
+            process_histograms(histos, temp_hists, samples, ch, info_samples.colours, label, info_samples.titles, main_pad, ratio_pad, c1, blinding)
 
         if flavor and temp_flavor_hists:
             print("Processing flavor-based histograms...")
-            process_flavor_histograms(histos_flavor, temp_flavor_hists, ch, label, main_pad, ratio_pad, c1, colours, blinding)
+            process_flavor_histograms(histos_flavor, temp_flavor_hists, ch, label, main_pad, ratio_pad, c1, info_samples.colours, blinding)
 
         print("#### Plotting label:", label)
         print("End channel ", ch, "script at ", datetime.now().strftime('%d%b%Y_%Hh%Mm%Ss'))

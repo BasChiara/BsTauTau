@@ -7,7 +7,7 @@ import ROOT
 from array import array
 import numpy as np
 
-def compute_object_scale_factors(samples, ch, k, files_names):
+def compute_object_scale_factors(samples, ch, year, k, files_names):
     """
     Compute object scale factors (muon and electron ID, isolation, reconstruction).
     
@@ -23,41 +23,56 @@ def compute_object_scale_factors(samples, ch, k, files_names):
     
     # Muon scale factors
     if ch in ['emu', 'mu', 'mumu']:
-        samples = samples.Filter("mu1_pt>20") 
-        samples = samples.Define("mu1_idsf", 'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
-        samples = samples.Define("mu1_isosf", 'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
+        samples = samples.Filter("mu1_pt>20")
+        # ID
+        samples = samples.Define("mu1_idsf",        'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
+        samples = samples.Define("mu1_idsfUnc",     quadrature_sum_expr(['csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
+        # Isolation
+        samples = samples.Define("mu1_isosf",       'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
+        samples = samples.Define("mu1_isosfUnc",    quadrature_sum_expr(['csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
 
         if ch != 'mumu':
-            samples = samples.Define('mu_sf_weight', 'mu1_idsf*mu1_isosf')
-
-    # Second muon for mumu channel
-    if ch == 'mumu': 
-        samples = samples.Filter("mu2_pt>20")
-        samples = samples.Define("mu2_idsf", 'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
-        samples = samples.Define("mu2_isosf", 'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
-        samples = samples.Define('mu_sf_weight', 'mu1_idsf*mu1_isosf*mu2_idsf*mu2_isosf')
+            samples = combine_insert_weight(samples, 'mu_sf_weight', ['mu1_idsf', 'mu1_isosf'], make_variations=True)
+        
+        else : # Second muon for mumu channel
+            samples = samples.Filter("mu2_pt>20")
+            # ID
+            samples = samples.Define("mu2_idsf",        'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
+            samples = samples.Define("mu2_idsfUnc",     quadrature_sum_expr(['csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"stat"})', 'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"syst"})']))
+            # Isolation
+            samples = samples.Define("mu2_isosf",       'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
+            samples = samples.Define("mu2_isosfUnc",    quadrature_sum_expr(['csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"stat"})', 'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"syst"})']))
+            
+            samples = combine_insert_weight(samples, 'mu_sf_weight', ['mu1_idsf', 'mu1_isosf', 'mu2_idsf', 'mu2_isosf'], make_variations=True)
     
     # Electron scale factors
     if ch in ['emu', 'e', 'ee']:
-        ## pt cut on e1 already applied on saved ntuples
         samples = samples.Filter("e1_pt>20")
-        samples = samples.Define("e1_recosf", 'csetEl_2018->evaluate({"2018", "sf", "RecoAbove20", std::abs(e1_eta), e1_pt})')
-        samples = samples.Define("e1_idsf", 'csetEl_2018->evaluate({"2018", "sf", "Tight", std::abs(e1_eta), e1_pt})')
+        # Reco
+        samples = samples.Define("e1_recosf",   'csetEl_all->evaluate({"'+str(year)+'", "sf", "RecoAbove20", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_recosfUnc", syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e1_eta), e1_pt})','csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e1_eta), e1_pt})'))
+        # ID
+        samples = samples.Define("e1_idsf",     'csetEl_all->evaluate({"'+str(year)+'", "sf", "Tight", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_idsfUnc",   syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "Tight", std::abs(e1_eta), e1_pt})', 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "Tight", std::abs(e1_eta), e1_pt})'))
 
         if ch != 'ee':
-            samples = samples.Define('e_sf_weight', 'e1_recosf*e1_idsf')
-    
-    # Second electron for ee channel
-    if ch == 'ee':
-        samples = samples.Filter("e2_pt>20")
-        samples = samples.Define("e2_recosf", 'csetEl_2018->evaluate({"2018", "sf", "RecoAbove20", std::abs(e2_eta), e2_pt})')
-        samples = samples.Define("e2_idsf", 'csetEl_2018->evaluate({"2018", "sf", "Tight", std::abs(e2_eta), e2_pt})')
-        samples = samples.Define('e_sf_weight', 'e1_recosf*e1_idsf*e2_recosf*e2_idsf')
+            samples = combine_insert_weight(samples, 'e_sf_weight', ['e1_recosf', 'e1_idsf'], make_variations=True)
+        else: # Second electron for ee channel
+            samples = samples.Filter("e2_pt>20")
+            
+            # Reco
+            samples = samples.Define("e2_recosf",   'csetEl_all->evaluate({"'+str(year)+'", "sf", "RecoAbove20", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_recosfUnc", syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})','csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})'))
+            # ID
+            samples = samples.Define("e2_idsf",     'csetEl_all->evaluate({"{}", "sf", "Tight", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_idsfUnc",  syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "Tight", std::abs(e2_eta), e2_pt})', 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "Tight", std::abs(e2_eta), e2_pt})'))
+            
+            samples = combine_insert_weight(samples, 'e_sf_weight', ['e1_recosf', 'e1_idsf', 'e2_recosf', 'e2_idsf'], make_variations=True)
     
     return samples
 
 
-def compute_trigger_scale_factors(samples, ch):
+def compute_trigger_scale_factors(samples, year, ch):
     """
     Compute trigger scale factors for different channels.
     
@@ -72,23 +87,32 @@ def compute_trigger_scale_factors(samples, ch):
     if ch == 'mu': 
         samples = samples.Filter("mu1_pt>25") 
         samples = samples.Define("mu1_trgsf", 'csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
-        samples = samples.Define('tot_sf_weight', 'mu_sf_weight*mu1_trgsf')
+        samples = samples.Define('mu1_trgsfUnc', quadrature_sum_expr(['csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
+        
+        samples = combine_insert_weight(samples, 'tot_sf_weight', ['mu_sf_weight', 'mu1_trgsf'], make_variations=True)
 
     elif ch == 'mumu':
-        samples = samples.Define("trg_sf_weight", "get_mumu_trigger_sf(mu1_pt, mu2_pt)")
-        samples = samples.Define('tot_sf_weight', 'mu_sf_weight*trg_sf_weight')
+        samples = samples.Define("trg_sf_weight",    "get_mumu_trigger_sf(mu1_pt, mu2_pt)")
+        samples = samples.Define('trg_sf_weightUnc', "get_mumu_trigger_sf(mu1_pt, mu2_pt, "+str(year)+",true)")
         
+        samples = combine_insert_weight(samples, 'tot_sf_weight', ['mu_sf_weight', 'trg_sf_weight'], make_variations=True)
+
     elif ch == 'emu':
-        samples = samples.Define("trg_sf_weight", "get_emu_trigger_sf(e1_pt, mu1_pt)")
-        samples = samples.Define('tot_sf_weight', 'e_sf_weight*mu_sf_weight*trg_sf_weight')
+        samples = samples.Define("trg_sf_weight",    'get_emu_trigger_sf(e1_pt, mu1_pt)')
+        samples = samples.Define('trg_sf_weightUnc', 'get_emu_trigger_sf(e1_pt, mu1_pt, "'+str(year)+'",true)')
+        
+        samples = combine_insert_weight(samples, 'tot_sf_weight', ['mu_sf_weight', 'e_sf_weight', 'trg_sf_weight'], make_variations=True)
 
     elif ch == 'ee':
-        samples = samples.Define("trg_sf_weight", "get_ee_trigger_sf(e1_pt, e2_pt)")
-        samples = samples.Define('tot_sf_weight', 'e_sf_weight*trg_sf_weight')
-
+        samples = samples.Define("trg_sf_weight",    "get_ee_trigger_sf(e1_pt, e2_pt)")
+        samples = samples.Define('trg_sf_weightUnc', "get_ee_trigger_sf(e1_pt, e2_pt, "+str(year)+",true)")
+        
+        samples = combine_insert_weight(samples, 'tot_sf_weight', ['e_sf_weight', 'trg_sf_weight'], make_variations=True)
     elif ch == 'e':
         samples = samples.Define("e1_trgsf", 'get_single_e_trigger_sf(e1_pt,e1_eta)')
-        samples = samples.Define('tot_sf_weight', 'e_sf_weight*e1_trgsf')
+        samples = samples.Define('e1_trgsfUnc', 'get_single_e_trigger_sf(e1_pt,e1_eta, '+str(year)+', true)')
+        
+        samples = combine_insert_weight(samples, 'tot_sf_weight', ['e_sf_weight', 'e1_trgsf'], make_variations=True)
     
     return samples
 
@@ -109,11 +133,12 @@ def compute_additional_scale_factors(samples, k, files_names):
     # Top pT reweighting for TTbar samples
     if 'TTT' in files_names[k] or 'BsToTauTau' in files_names[k]:
         samples = samples.Define("top_pt_weight", "top_ptweight(GenCand_pt, GenCand_id)")
+        samples = samples.Define("top_pt_weightUnc", "fabs(1-top_pt_weight)") # FIXME not sure is correct
     
     return samples
 
 
-def compute_all_scale_factors(samples, ch, k, files_names):
+def compute_all_scale_factors(samples, ch, year, k, files_names):
     """
     Main function to compute all scale factors for a given sample.
     
@@ -128,12 +153,15 @@ def compute_all_scale_factors(samples, ch, k, files_names):
     """
     
     # Compute object scale factors
-    samples = compute_object_scale_factors(samples, ch, k, files_names)
+    print(f"\tobject scale factors")
+    samples = compute_object_scale_factors(samples, ch, year, k, files_names)
     
     # Compute trigger scale factors
-    samples = compute_trigger_scale_factors(samples, ch)
+    print(f"\ttrigger scale factors")
+    samples = compute_trigger_scale_factors(samples, year, ch)
     
     # Compute additional scale factors
+    print(f"\tadditional scale factors")
     samples = compute_additional_scale_factors(samples, k, files_names)
     
     return samples
@@ -152,27 +180,27 @@ def save_samples_with_sfs(samples, ch, k, files_names, output_dir):
 
     output_path = f"{output_dir}{files_names[k]}.root"
     samples.Snapshot("Events", output_path)
-    print(f"Saved sample with SFs: {output_path}")
+    print(f"[SFs] saved sample with SFs: {output_path}")
 
 
 ## btagging scale factors
 def compute_btagging_scale_factors(samples, ch, wp="L"):
     # btagging scale factors depending on btagging selection conditions in various channels
     # wp: working point, "L" (loose) or "M" (medium)
-
-    samples = samples.Define("bcjet_mask", "selected_jets_for_histo_hadronFlavour != 0")
-    samples = samples.Define("bcjet_flavour", "selected_jets_for_histo_hadronFlavour[bcjet_mask]")
-    samples = samples.Define("bcjet_eta", "selected_jets_for_histo_eta[bcjet_mask]")
-    samples = samples.Define("bcjet_pt", "selected_jets_for_histo_pt[bcjet_mask]")
+    
+    samples = samples.Define("bcjet_mask",      "selected_jets_for_histo_hadronFlavour != 0")
+    samples = samples.Define("bcjet_flavour",   "selected_jets_for_histo_hadronFlavour[bcjet_mask]")
+    samples = samples.Define("bcjet_eta",       "selected_jets_for_histo_eta[bcjet_mask]")
+    samples = samples.Define("bcjet_pt",        "selected_jets_for_histo_pt[bcjet_mask]")
     samples = samples.Define(
         "btag_sf_bcjets",
         f'evaluate_btag_mujets_sf(bcjet_flavour, bcjet_eta, bcjet_pt, "{wp}")'
     )
 
-    samples = samples.Define("lightjet_mask", "selected_jets_for_histo_hadronFlavour == 0")
+    samples = samples.Define("lightjet_mask",    "selected_jets_for_histo_hadronFlavour == 0")
     samples = samples.Define("lightjet_flavour", "selected_jets_for_histo_hadronFlavour[lightjet_mask]")
-    samples = samples.Define("lightjet_eta", "selected_jets_for_histo_eta[lightjet_mask]")
-    samples = samples.Define("lightjet_pt", "selected_jets_for_histo_pt[lightjet_mask]")
+    samples = samples.Define("lightjet_eta",     "selected_jets_for_histo_eta[lightjet_mask]")
+    samples = samples.Define("lightjet_pt",      "selected_jets_for_histo_pt[lightjet_mask]")
     samples = samples.Define(
         "btag_sf_lightjets",
         f'evaluate_btag_incl_sf(lightjet_flavour, lightjet_eta, lightjet_pt, "{wp}")'

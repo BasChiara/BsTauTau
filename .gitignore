@@ -1,0 +1,58 @@
+# Text files
+*.log
+*.npy
+
+# Multimedia
+*.pdf
+*.png
+*.root
+*/plots*
+
+*/archive
+# py cache
+*__pycache__
+*.pyc
+
+# condor
+*cbasile.cc
+
+# vscode cache
+*.vscode
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# backup files
+*/*/archive/*
+*.swp
+*.swo
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+#ROOT executables 
+*_.d
+*_C.so

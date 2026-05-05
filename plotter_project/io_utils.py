@@ -58,25 +58,33 @@ def load_mc_samples(ch, mc_samples_names, files_names, tree_name, tree_dir_mc, t
     """Load MC samples, apply weights, and trigger selections."""
     mc_samples = dict()
     if compute_btag_sfs or use_ntuples_with_sfs:
-        print("Computing b-tagging scale factors, loading from:", tree_dir_wsfs)
+        print("Computing scale factors, loading from:", tree_dir_wsfs)
         tree_dir_mc = tree_dir_wsfs
     if use_ntuples_with_btag_sfs:
         print("Using b-tagging scale factors, loading from:", tree_dir_btag_sfs)
         tree_dir_mc = tree_dir_btag_sfs
+    if not os.path.isdir(tree_dir_mc):
+        print(f"Error: MC directory {tree_dir_mc} does not exist.")
+        return mc_samples
 
     for k in mc_samples_names:
-        file_name = files_names[k]
-        print(f"Loaded {tree_dir_mc}/{file_name}.root")
         
+        file_name = os.path.join(tree_dir_mc, files_names[k]+'.root')
+        if not os.path.isfile(file_name):
+            print(f"Error: File {file_name} does not exist. Skipping sample {k}.")
+            continue
+        print(f" + {file_name}")
+
         # Create RDataFrame for the sample
         if nevents == None:
-            mc_samples[k] = ROOT.RDataFrame(tree_name, f'{tree_dir_mc}/{file_name}.root')
+            mc_samples[k] = ROOT.RDataFrame(tree_name, file_name)
         else:
-            mc_samples[k] = ROOT.RDataFrame(tree_name, f'{tree_dir_mc}/{file_name}.root').Range(nevents)
+            mc_samples[k] = ROOT.RDataFrame(tree_name, file_name).Range(nevents)
         
         # Apply weight normalization if necessary
+        # FIXME year dependency
         if not compute_btag_sfs and not use_ntuples_with_sfs and not use_ntuples_with_btag_sfs:
-            norm_weight = luminosity_2018 * cross_sections[k] * 1000 / get_genEventSumw(f'{tree_dir_mc}/{file_name}.root')
+            norm_weight = luminosity_2018 * cross_sections[k] * 1000 / get_genEventSumw(file_name)
             if part_samples:
                 mc_samples[k] = mc_samples[k].Define('norm_weight', f'L1PreFiringWeight_Nom*genWeight*puWeight*{norm_weight}')
             else:
@@ -131,29 +139,39 @@ def load_data_samples(ch, data_samples, files_names, tree_name, tree_dir_data, t
         data_dir = tree_dir_filtered
     else:
         data_dir = tree_dir_data
-
+    
+    if not os.path.isdir(data_dir):
+        print(f"Error: Data directory {data_dir} does not exist.")
+        return data_samples_dict, chains_dict
+    
     for k in data_samples[ch]:
-        print(f"Loading data sample {k} for channel {ch}")
+        print(f"\nLoading data sample {k} for channel {ch}")
         file_name = files_names[k]
         tmp_chain = ROOT.TChain(tree_name)
 
         if use_filtered_data:
             # Only one file, no eras
             era_file = f'{data_dir}/{file_name}.root'
-            print(f"Loading {era_file}")
+            if not os.path.isfile(era_file):
+                print(f"Warning: File {era_file} does not exist. Skipping this era for sample {k}.")
+                continue
+            print(f" + {era_file}")
             tmp_chain.Add(era_file)
         else:
             # Add the eras for each data sample
-            for era in eras_2018:
+            for era in eras_2018: #FIXME: generalize 
                 era_file = f'{data_dir}/{file_name}{era}.root'
-                print(f"Loading {era_file}")
+                if not os.path.isfile(era_file):
+                    print(f"Warning: File {era_file} does not exist. Skipping this era for sample {k}.")
+                    continue
+                print(f" + {era_file}")
                 tmp_chain.Add(era_file)
 
         if nevents == None:
             tmp_data_rdf = ROOT.RDataFrame(tmp_chain)
         else:
             tmp_data_rdf = ROOT.RDataFrame(tmp_chain).Range(nevents)
-        # Debug: print number of events loaded
+        # Debug: print number of events loaded 
 
         # Apply trigger selection and exclusions ONLY if NOT using filtered data
         if not use_filtered_data:

@@ -11,6 +11,6 @@ def get_genEventSumw(file_path):
     for entry in runs_tree:
         sumw += entry.genEventSumw
 
-    #print("The sumw is ",sumw)
+    print(" [weight] the total enEventSumw is ",sumw)
     f.Close()
     return sumw
