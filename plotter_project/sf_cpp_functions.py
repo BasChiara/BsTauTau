@@ -38,12 +38,13 @@ def declare_sfs_cpp_functions(year='2018'):
             }
         }
 
-        double get_mumu_trigger_sf(double e1_pt, double mu1_pt, TString year = "2018", bool uncertainty = false) {
+        double get_mumu_trigger_sf(double mu1_pt, double mu2_pt, TString year = "2018", bool uncertainty = false) {
             if (sfshisto_mumu == nullptr) {
                 load_sfshistomumu();
             }
-            int bin_x = sfshisto_mumu->GetXaxis()->FindBin(e1_pt);
-            int bin_y = sfshisto_mumu->GetYaxis()->FindBin(mu1_pt);
+            const double maxleppt = 499.99;
+            int bin_x = sfshisto_mumu->GetXaxis()->FindBin(std::min(mu1_pt, maxleppt));
+            int bin_y = sfshisto_mumu->GetYaxis()->FindBin(std::min(mu2_pt, maxleppt));
             if (!uncertainty) {
                 return sfshisto_mumu->GetBinContent(bin_x, bin_y);
             } else {
@@ -72,8 +73,9 @@ def declare_sfs_cpp_functions(year='2018'):
             if (sfshisto_emu == nullptr) {
                 load_sfshisto();
             }
-            int bin_x = sfshisto_emu->GetXaxis()->FindBin(e1_pt);
-            int bin_y = sfshisto_emu->GetYaxis()->FindBin(mu1_pt);
+            const double maxleppt = 499.99;
+            int bin_x = sfshisto_emu->GetXaxis()->FindBin(std::min(e1_pt, maxleppt));
+            int bin_y = sfshisto_emu->GetYaxis()->FindBin(std::min(mu1_pt, maxleppt));
             if (!uncertainty){
                 return sfshisto_emu->GetBinContent(bin_x, bin_y);
             } else {
@@ -102,8 +104,9 @@ def declare_sfs_cpp_functions(year='2018'):
             if (sfshisto_ee == nullptr) {
                 load_sfshisto_ee();
             }
-            int bin_x = sfshisto_ee->GetXaxis()->FindBin(e1_pt);
-            int bin_y = sfshisto_ee->GetYaxis()->FindBin(e2_pt);
+            const double maxleppt = 499.99; 
+            int bin_x = sfshisto_ee->GetXaxis()->FindBin(std::min(e1_pt, maxleppt));
+            int bin_y = sfshisto_ee->GetYaxis()->FindBin(std::min(e2_pt, maxleppt));
             if (!uncertainty){
                 return sfshisto_ee->GetBinContent(bin_x, bin_y);
             } else {
