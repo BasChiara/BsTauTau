@@ -30,10 +30,9 @@ def compute_object_scale_factors(samples, ch, year, k, files_names):
         # Isolation
         samples = samples.Define("mu1_isosf",       'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
         samples = samples.Define("mu1_isosfUnc",    quadrature_sum_expr(['csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
-
+        
         if ch != 'mumu':
             samples = combine_insert_weight(samples, 'mu_sf_weight', ['mu1_idsf', 'mu1_isosf'], make_variations=True)
-        
         else : # Second muon for mumu channel
             samples = samples.Filter("mu2_pt>20")
             # ID
@@ -187,30 +186,82 @@ def save_samples_with_sfs(samples, ch, k, files_names, output_dir):
 def compute_btagging_scale_factors(samples, ch, wp="L"):
     # btagging scale factors depending on btagging selection conditions in various channels
     # wp: working point, "L" (loose) or "M" (medium)
+
+    name_variation = list(zip(
+        ["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
+        ["up", "down", "up_correlated", "down_correlated", "up_uncorrelated", "down_uncorrelated"]
+    ))
     
+    # bc-jet SFs
     samples = samples.Define("bcjet_mask",      "selected_jets_for_histo_hadronFlavour != 0")
     samples = samples.Define("bcjet_flavour",   "selected_jets_for_histo_hadronFlavour[bcjet_mask]")
     samples = samples.Define("bcjet_eta",       "selected_jets_for_histo_eta[bcjet_mask]")
     samples = samples.Define("bcjet_pt",        "selected_jets_for_histo_pt[bcjet_mask]")
+    
     samples = samples.Define(
         "btag_sf_bcjets",
-        f'evaluate_btag_mujets_sf(bcjet_flavour, bcjet_eta, bcjet_pt, "{wp}")'
+        f'evaluate_btag_mujets_sf(bcjet_flavour, bcjet_eta, bcjet_pt, "{wp}", "central")'
     )
-
+    # up/down total variation (total, correlated, uncorrelated)
+    for var_suffix, var in name_variation:
+        samples = samples.Define(
+            f"btag_sf_bcjets{var_suffix}",
+            f'evaluate_btag_mujets_sf(bcjet_flavour, bcjet_eta, bcjet_pt, "{wp}", "{var}")'
+        )
+    
+    # light-jet SFs
     samples = samples.Define("lightjet_mask",    "selected_jets_for_histo_hadronFlavour == 0")
     samples = samples.Define("lightjet_flavour", "selected_jets_for_histo_hadronFlavour[lightjet_mask]")
     samples = samples.Define("lightjet_eta",     "selected_jets_for_histo_eta[lightjet_mask]")
     samples = samples.Define("lightjet_pt",      "selected_jets_for_histo_pt[lightjet_mask]")
+    
     samples = samples.Define(
         "btag_sf_lightjets",
-        f'evaluate_btag_incl_sf(lightjet_flavour, lightjet_eta, lightjet_pt, "{wp}")'
+        f'evaluate_btag_incl_sf(lightjet_flavour, lightjet_eta, lightjet_pt, "{wp}", "central")'
     )
+    
+    # up/down total variation
+    for var_suffix, var in name_variation:
+        samples = samples.Define(
+            f"btag_sf_lightjets{var_suffix}",
+            f'evaluate_btag_incl_sf(lightjet_flavour, lightjet_eta, lightjet_pt, "{wp}", "{var}")'
+        )
 
+    # MERGE bc + light jets SFs
     samples = samples.Define(
         "btag_sf",
         "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjets)"
     )
-    
+
+    # up/down total variation
+    # (!) light SFs varied down(up) for the up(down) variation as anti-correlate to total event weight
+    samples = samples.Define(
+        "btag_sfUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjetsUp, btag_sf_lightjetsDown)"
+    )
+    samples = samples.Define(
+        "btag_sfDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjetsDown, btag_sf_lightjetsUp)"
+    )
+    # up/down year-correlated variation
+    samples = samples.Define(
+        "btag_sf_corrUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_corrUp, btag_sf_lightjets_corrDown)"
+    )
+    samples = samples.Define(
+        "btag_sf_corrDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_corrDown, btag_sf_lightjets_corrUp)"
+    )
+    # up/down year-uncorrelated variation
+    samples = samples.Define(
+        "btag_sf_uncorrUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_uncorrUp, btag_sf_lightjets_uncorrDown)"
+    )
+    samples = samples.Define(
+        "btag_sf_uncorrDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_uncorrDown, btag_sf_lightjets_uncorrUp)"
+    )
+ 
     return samples
 
 def compute_btagging_event_weight(samples, ch, wp):
@@ -219,10 +270,24 @@ def compute_btagging_event_weight(samples, ch, wp):
         threshold = 0.0499  # Loose working point threshold
     elif wp == 'M':
         threshold = 0.2770  # Medium working point threshold
+    
     samples = samples.Define(
         "btag_event_weight",
         f'compute_event_weight(selected_jets_for_histo_deepflavB, {threshold}, btag_sf, selected_jets_for_histo_hadronFlavour, selected_jets_for_histo_eta, selected_jets_for_histo_pt, "{wp}")'
     )
+    # up/down variations (total, correlated, uncorrelated)
+    # FIXME: varying up(down) the bc (light) SF for the total up variation (opposite for down)
+    #        maybe too conservative but easier for the moment
+    name_variation = zip(
+        ["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
+        ["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
+    )
+    for var_suffix, sf_suffix in name_variation:
+        samples = samples.Define(
+            f"btag_event_weight{var_suffix}",
+            f'compute_event_weight(selected_jets_for_histo_deepflavB, {threshold}, btag_sf{sf_suffix}, selected_jets_for_histo_hadronFlavour, selected_jets_for_histo_eta, selected_jets_for_histo_pt, "{wp}")'
+        )
+    samples = samples.Define("btag_event_weightUnc", syst_fromvar_expr("btag_event_weightUp", "btag_event_weightDown"))
  
     return samples
 

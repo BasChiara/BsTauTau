@@ -131,10 +131,10 @@ def main():
         else:
             tree_dir          = '/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
             #tree_dir          = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
-            tree_dir_wsfs     = './wsfs_snapshots/'#%(tree_dir)
+            tree_dir_wsfs     = '%s/wsfs_snapshots/'%(tree_dir)
             tree_dir_btag_sfs = '%s/btag_sfs_snapshots/'%(tree_dir)
             tree_dir_filtered = '%s/filtered_data_snapshots/'%(tree_dir)
-            used_mc_samples_names = info_samples.mc_samples_names[-1:]  # Use all MC samples including 'bstautau'
+            used_mc_samples_names = info_samples.mc_samples_names  # Use all MC samples including 'bstautau'
 
         print(f"Using tree directory: {tree_dir}")
         samples[ch] = dict()
@@ -222,8 +222,7 @@ def main():
                     samples[ch][k] = compute_btagging_scale_factors(samples[ch][k], ch, "L")
                     samples[ch][k] = compute_btagging_event_weight(samples[ch][k], ch, "L")
 
-
-                ## Specify a custom output directory for saving snapshots
+                ## Specify a custom output directory for saving snapshots.
                 output_dir = tree_dir_btag_sfs
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
@@ -258,6 +257,7 @@ def main():
 
             if part_samples: #using updated samples with part scores
                 samples[ch][k] = define_combined_scores(samples[ch][k], tau_scores, parT_scores, bkg_scores, 'bstautau' in k, bstautau_conditions)
+                
                 if plot_part_selections:
                     # Apply  cuts filter and ONLY use those histograms
                     samples[ch][k] = apply_part_sequential_cuts_filter(samples[ch][k], is_bstautau='bstautau' in k)
@@ -271,7 +271,6 @@ def main():
                     # Regular plotting - define all the usual histograms
                     ## Define combined scores histograms
                     histos[ch].update(histos_combined_scores)
-
                     histos[ch].update(histos_jets_part)
                     histos[ch].update(histos_interesting_jets_part)
 
@@ -283,7 +282,8 @@ def main():
                     samples[ch][k] = define_max_scores(samples[ch][k], parT_scores, 'bstautau' in k, bstautau_conditions)
                     histos[ch].update(histos_max_scores)
                     #histos_flavor[ch].update(histos_max_scores) Not really easy to do because they are filtered in a weird way and I would need to define also hadronFlavor with the same filter
-        
+        # -- end loop on samples
+
         print("##### Creating Histogram Definitions #####")
         # Initialize all histogram definitions BEFORE processing (lazy setup)
         temp_hists = None
@@ -292,10 +292,9 @@ def main():
         if make_histos:
             print("Setting up sample-based histograms...")
             temp_hists = initialize_histograms(histos, samples, ch)
-        
-        if flavor:
-            print("Setting up flavor-based histograms...")
-            temp_flavor_hists = initialize_flavor_histograms(histos_flavor, samples, ch)
+            if flavor:
+                print("Setting up flavor-based histograms...")
+                temp_flavor_hists = initialize_flavor_histograms(histos_flavor, samples, ch)
 
         print("##### Plotting Histograms #####")
         c1, main_pad, ratio_pad = create_canvas_with_pads()
@@ -310,7 +309,8 @@ def main():
 
         print("#### Plotting label:", label)
         print("End channel ", ch, "script at ", datetime.now().strftime('%d%b%Y_%Hh%Mm%Ss'))
-
+    # end of channel loop
+    
     print("#### Plotting label:", label)
     print("End of script at ", datetime.now().strftime('%d%b%Y_%Hh%Mm%Ss'))
 

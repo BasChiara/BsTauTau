@@ -12,7 +12,7 @@ def declare_sfs_cpp_functions(year='2018'):
     ROOT.gInterpreter.Declare('auto csetMu_iso  = csetMu->at("NUM_TightRelIso_DEN_TightIDandIPCut");')
     ROOT.gInterpreter.Declare('auto csetMu_trg  = csetMu->at("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight");')
     # B-TAGGING #
-    ROOT.gInterpreter.Declare('auto csetBtag        = correction::CorrectionSet::from_file("sfs/btagging.json");')
+    ROOT.gInterpreter.Declare('auto csetBtag        = correction::CorrectionSet::from_file("/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2018-UL-NanoAODv9/latest/btagging.json.gz");')#"sfs/btagging.json");')
     ROOT.gInterpreter.Declare('auto csetBtag_mujets = csetBtag->at("deepJet_mujets");')
     ROOT.gInterpreter.Declare('auto csetBtag_incl   = csetBtag->at("deepJet_incl");')
 
@@ -173,7 +173,7 @@ def declare_sfs_cpp_functions(year='2018'):
 
 
     ## FIXME ME, rerun the lep SFS to have the correct selection on ETA
-    ## function to evaluate b-tagging scale factors
+    ## b-tagging
     ROOT.gInterpreter.Declare("""
     #include <correction.h>
     #include <vector>
@@ -183,19 +183,19 @@ def declare_sfs_cpp_functions(year='2018'):
     std::vector<float> evaluate_btag_mujets_sf(const ROOT::VecOps::RVec<int>& flav,
                                         const ROOT::VecOps::RVec<float>& eta,
                                         const ROOT::VecOps::RVec<float>& pt,
-                                        const std::string& wp = "L") {
+                                        const std::string& wp = "L",
+                                        const std::string& value = "central") {
         std::vector<float> result;
         result.reserve(pt.size());
         for (size_t i = 0; i < pt.size(); ++i) {
             float eta_val = std::abs(eta[i]);
-            if (eta_val >= 2.5f) {
-                eta_val = 2.499f;
-            }
             double pt_val = static_cast<double>(pt[i]);
-            if (pt_val <= 20.0) pt_val = 20.01;
+            if (eta_val >= 2.5f) eta_val = 2.499f;
+            if (pt_val <= 20.0f) pt_val = 20.01f;
             else if (pt_val >= 1000.0) pt_val = 999.99;
+            
             float sf = csetBtag_mujets->evaluate({
-                "central",            // C-style string literal (const char*)
+                value.c_str(),            // C-style string literal (const char*)
                 wp.c_str(),           // working point, now configurable
                 flav[i],              // int
                 eta_val,              // double (float promoted to double)
@@ -209,7 +209,8 @@ def declare_sfs_cpp_functions(year='2018'):
     std::vector<float> evaluate_btag_incl_sf(const ROOT::VecOps::RVec<int>& flav,
                                         const ROOT::VecOps::RVec<float>& eta,
                                         const ROOT::VecOps::RVec<float>& pt,
-                                        const std::string& wp = "L") {
+                                        const std::string& wp = "L",
+                                        const std::string& value = "central") {
         std::vector<float> result;
         result.reserve(pt.size());
         for (size_t i = 0; i < pt.size(); ++i) {
@@ -221,7 +222,7 @@ def declare_sfs_cpp_functions(year='2018'):
             if (pt_val <= 20.0) pt_val = 20.01;
             else if (pt_val >= 1000.0) pt_val = 999.99;
             float sf = csetBtag_incl->evaluate({
-                "central",            // C-style string literal (const char*)
+                value.c_str(),        // C-style string literal (const char*)
                 wp.c_str(),           // working point, now configurable
                 flav[i],              // int
                 eta_val,              // double (float promoted to double)
@@ -236,7 +237,8 @@ def declare_sfs_cpp_functions(year='2018'):
     ROOT.gInterpreter.Declare("""
     ROOT::VecOps::RVec<float> merge_btag_sfs(const ROOT::VecOps::RVec<int>& flavor,
                                             const ROOT::VecOps::RVec<float>& sf_bc,
-                                            const ROOT::VecOps::RVec<float>& sf_light) {
+                                            const ROOT::VecOps::RVec<float>& sf_light
+                                            ) {
         ROOT::VecOps::RVec<float> combined_sf(flavor.size());
         size_t bc_idx = 0;
         size_t light_idx = 0;
@@ -317,13 +319,13 @@ def declare_sfs_cpp_functions(year='2018'):
     }
 
     float compute_event_weight(
-        const ROOT::VecOps::RVec<float>& discr,    // jet btag discriminator (e.g. deepJet score)
-        float wp_val,                              // working point threshold
-        const ROOT::VecOps::RVec<float>& sf,      // per-jet scale factors
-        const ROOT::VecOps::RVec<int>& flav,      // hadron flavour per jet
+        const ROOT::VecOps::RVec<float>& discr,     // jet btag discriminator (e.g. deepJet score)
+        float wp_val,                               // working point threshold
+        const ROOT::VecOps::RVec<float>& sf,        // per-jet scale factors
+        const ROOT::VecOps::RVec<int>& flav,        // hadron flavour per jet
         const ROOT::VecOps::RVec<float>& eta,
         const ROOT::VecOps::RVec<float>& pt,
-        const std::string& wp_str = "L"           // working point string ("L" or "M")
+        const std::string& wp_str = "L"             // working point string ("L" or "M")
     )
     {
         float weight = 1.0; // per event weight 
@@ -408,5 +410,4 @@ def quadrature_sum_expr(string_list):
         return "sqrt(" + "+".join(terms) + ")"
 
 def syst_fromvar_expr(varup, vardown):
-
-    return "0.5*abs({0} - {1})".format(varup, vardown)
+    return "0.5*fabs({0} - {1})".format(varup, vardown)

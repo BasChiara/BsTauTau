@@ -59,7 +59,7 @@ def officialStyle(style, tgaxis=None):
     # Various
     style.SetMarkerStyle(20)
     style.SetMarkerColor(kBlack)
-    style.SetMarkerSize(1.4)
+    style.SetMarkerSize(1.2)
 
     style.SetTitleBorderSize(0)
     style.SetTitleFillColor(0)

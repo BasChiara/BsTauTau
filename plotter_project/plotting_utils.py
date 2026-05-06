@@ -37,15 +37,12 @@ def create_canvas_with_pads():
     return c1, main_pad, ratio_pad
 
 def initialize_histograms(histos, samples, ch):
-    print(' > initialize histograms')
     temp_hists = {}
     
     for k, v in histos[ch].items():
         temp_hists[k] = {}
-        print(f'\t branch {k}')
         for kk, vv in samples[ch].items():
             branch_name = k
-            print(f'\t\t sample {kk}') 
             temp_hists[k][f'{k}_{kk}'] = vv.Histo1D(v[0], branch_name, 'tot_weight')
             
             # stat + systematic error
@@ -54,7 +51,7 @@ def initialize_histograms(histos, samples, ch):
             tmp_histDown = vv.Histo1D(v[0], branch_name, 'tot_weightDown')
             for ibin in range(temp_hists[k][f'{k}_{kk}'].GetNbinsX()):
                 
-                ths_sys  = abs(tmp_histUp.GetBinContent(ibin+1) - tmp_histDown.GetBinContent(ibin+1)) 
+                ths_sys  = 0.5*abs(tmp_histUp.GetBinContent(ibin+1) - tmp_histDown.GetBinContent(ibin+1)) 
                 ths_stat = temp_hists[k][f'{k}_{kk}'].GetBinError(ibin+1)
                 ths_err = math.sqrt(ths_stat**2 + ths_sys**2)
                 
@@ -316,9 +313,9 @@ def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, 
                 bstautau_scaled_max = bstautau_unscaled_max
             
             # Use the maximum of all scenarios
-            desired_max = 1.4 * max(mc_max, data_max, bstautau_unscaled_max, bstautau_scaled_max)
+            desired_max = 1.5 * max(mc_max, data_max, bstautau_unscaled_max, bstautau_scaled_max)
         else:
-            desired_max = 1.4 * max(mc_max, data_max)
+            desired_max = 1.5 * max(mc_max, data_max)
         
         # Get X-axis range from the histogram
         x_min = ths1.GetXaxis().GetXmin()
