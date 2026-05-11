@@ -128,6 +128,13 @@ def compute_additional_scale_factors(samples, k, files_names):
     Returns:
         Modified RDataFrame with additional scale factors applied
     """
+    # L1 pre-firing
+    # - nominal value already in nanoAOD
+    samples = samples.Define("L1PreFiringWeight_Unc", syst_fromvar_expr("L1PreFiringWeight_Up", "L1PreFiringWeight_Dn"))
+
+    # PU reweighting
+    #- nominal value already in nanoAOD
+    samples = samples.Define("puWeightUnc", syst_fromvar_expr("puWeightUp", "puWeightDown"))
     
     # Top pT reweighting for TTbar samples
     if 'TTT' in files_names[k] or 'BsToTauTau' in files_names[k]:

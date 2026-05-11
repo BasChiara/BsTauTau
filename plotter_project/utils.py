@@ -195,11 +195,11 @@ def define_jets_with_btagging_selection(samples, part_samples, plot_all_jets=Fal
 def define_btagging_conditions(samples, ch):
     """Define b-tagging conditions for different channels."""
     btagging_conditions = {
-        "emu": "btagged_loose_jets_pt_above_20.size()>=2",
-        "mumu": "btagged_loose_jets_pt_above_20.size()>=2",
-        "ee": "btagged_loose_jets_pt_above_20.size()>=2",
-        "mu": "btagged_medium_jets_pt_above_20.size()>=2",
-        "e": "btagged_loose_jets_pt_above_30.size()>=2"
+        "emu"   : "btagged_loose_jets_pt_above_20.size()>=2",
+        "mumu"  : "btagged_loose_jets_pt_above_20.size()>=2",
+        "ee"    : "btagged_loose_jets_pt_above_20.size()>=2",
+        "mu"    : "btagged_medium_jets_pt_above_20.size()>=2",
+        "e"     : "btagged_loose_jets_pt_above_30.size()>=2"
     }
     
     for channel, condition in btagging_conditions.items():
@@ -311,9 +311,9 @@ def build_weight_string(k, files_names, options):
         options (dict): Dict of flags like compute_sfs, use_ntuples_with_sfs, etc.
 
     Returns:
-        str: Weight expression (e.g., "norm_weight*tot_sf_weight").
+        str: Weight expression (e.g., "norm_weight*L1PreFiringWeight_Nom*puWeight*tot_sf_weight").
     """
-    weight_terms = ['norm_weight']
+    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight']
 
 
     if options.compute_sfs or options.use_ntuples_with_sfs:
@@ -343,8 +343,8 @@ def define_total_weight(sample, k, files_names, options):
     Returns:
         Updated RDataFrame with a new column 'total_weight'.
     """
-    weight_expression = build_weight_string(k, files_names, options).split('*')
-    sample = sf_cpp.combine_insert_weight(sample, 'tot_weight', weight_expression, make_variations=True)
+    weight_list = build_weight_string(k, files_names, options).split('*')
+    sample      = sf_cpp.combine_insert_weight(sample, 'tot_weight', weight_list, make_variations=True)
 
     return sample
 

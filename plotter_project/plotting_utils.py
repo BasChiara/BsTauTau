@@ -89,8 +89,8 @@ def compute_ratio_plot(temp_hists, ratio, stats, ratio_pad):
     ratio_stats = stats.Clone()
     ratio_stats.SetName(ratio.GetName()+'_ratiostats')
     ratio_stats.Divide(stats)
-    ratio_stats.SetMaximum(1.19999) # avoid displaying 2, that overlaps with 0 in the main_pad
-    ratio_stats.SetMinimum(0.79999) # and this is for symmetry
+    ratio_stats.SetMaximum(1.49999) # avoid displaying 2, that overlaps with 0 in the main_pad
+    ratio_stats.SetMinimum(0.5) # and this is for symmetry
     ratio_stats.GetYaxis().SetTitle('obs/exp')
     ratio_stats.GetYaxis().SetTitleOffset(0.5)
     ratio_stats.GetYaxis().SetNdivisions(405)

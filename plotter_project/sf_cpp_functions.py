@@ -367,7 +367,7 @@ def combine_insert_weight(
     """
     
     if unc_branches is None:
-        unc_branches = [b + "Unc" for b in sf_branches]
+        unc_branches = [b.removesuffix("Nom") + "Unc" for b in sf_branches]
     
     # SF branch not found -> ERROR
     # SF-uncertainty branch not found -> WARNING, define it as 0.0

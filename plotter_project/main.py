@@ -152,7 +152,6 @@ def main():
         print("\n====== Processing Samples ======")
         for k, v in samples[ch].items():
            
-            #print(f" > {k}")
             minimum_jet_conditions = '(j_pt > 20 & abs(j_eta)< 2.5 & j_jetid>=2)' # jet pt >20 for btagging SFs
 
             if 'bstautau' in k:
@@ -170,10 +169,10 @@ def main():
                 print(f"\t + defining new branches")
                 samples[ch][k] = define_invariant_mass_and_mt(samples[ch][k],ch)
 
-                # Define jet branches
+                # Define selected_jet branches
                 samples[ch][k] = define_jets_with_minimum_selection(samples[ch][k],minimum_jet_conditions, part_samples)
 
-                ## define bstautau mask
+                # Define bstautau mask
                 if 'bstautau' in k:
                     samples[ch][k] = define_bstautau_mask(samples[ch][k])
 
