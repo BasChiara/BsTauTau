@@ -25,11 +25,16 @@ def compute_object_scale_factors(samples, ch, year, k, files_names):
     if ch in ['emu', 'mu', 'mumu']:
         samples = samples.Filter("mu1_pt>20")
         # ID
-        samples = samples.Define("mu1_idsf",        'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
-        samples = samples.Define("mu1_idsfUnc",     quadrature_sum_expr(['csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
+        samples = samples.Define("mu1_idsf",       'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
+        samples = samples.Define("mu1_idsfUnc",    quadrature_sum_expr(['csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
+        samples = samples.Define("mu1_idsfUp",     'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"systup"})')
+        samples = samples.Define("mu1_idsfDown",   'csetMu_id->evaluate({std::abs(mu1_eta), mu1_pt,"systdown"})')
+        
         # Isolation
         samples = samples.Define("mu1_isosf",       'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
         samples = samples.Define("mu1_isosfUnc",    quadrature_sum_expr(['csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
+        samples = samples.Define("mu1_isosfUp",     'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"systup"})')
+        samples = samples.Define("mu1_isosfDown",   'csetMu_iso->evaluate({std::abs(mu1_eta), mu1_pt,"systdown"})')
         
         if ch != 'mumu':
             samples = combine_insert_weight(samples, 'mu_sf_weight', ['mu1_idsf', 'mu1_isosf'], make_variations=True)
@@ -38,9 +43,14 @@ def compute_object_scale_factors(samples, ch, year, k, files_names):
             # ID
             samples = samples.Define("mu2_idsf",        'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
             samples = samples.Define("mu2_idsfUnc",     quadrature_sum_expr(['csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"stat"})', 'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"syst"})']))
+            samples = samples.Define("mu2_idsfUp",      'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"systup"})')
+            samples = samples.Define("mu2_idsfDown",    'csetMu_id->evaluate({std::abs(mu2_eta), mu2_pt,"systdown"})')
+            
             # Isolation
-            samples = samples.Define("mu2_isosf",       'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
-            samples = samples.Define("mu2_isosfUnc",    quadrature_sum_expr(['csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"stat"})', 'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"syst"})']))
+            samples = samples.Define("mu2_isosf",        'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"nominal"})')
+            samples = samples.Define("mu2_isosfUnc",     quadrature_sum_expr(['csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"stat"})', 'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"syst"})']))
+            samples = samples.Define("mu2_isosfUp",      'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"systup"})')
+            samples = samples.Define("mu2_isosfDown",    'csetMu_iso->evaluate({std::abs(mu2_eta), mu2_pt,"systdown"})')
             
             samples = combine_insert_weight(samples, 'mu_sf_weight', ['mu1_idsf', 'mu1_isosf', 'mu2_idsf', 'mu2_isosf'], make_variations=True)
     
@@ -48,10 +58,15 @@ def compute_object_scale_factors(samples, ch, year, k, files_names):
     if ch in ['emu', 'e', 'ee']:
         samples = samples.Filter("e1_pt>20")
         # Reco
-        samples = samples.Define("e1_recosf",   'csetEl_all->evaluate({"'+str(year)+'", "sf", "RecoAbove20", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_recosf",     'csetEl_all->evaluate({"'+str(year)+'", "sf",     "RecoAbove20", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_recosfUp",   'csetEl_all->evaluate({"'+str(year)+'", "sfup",   "RecoAbove20", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_recosfDown", 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e1_eta), e1_pt})')
         samples = samples.Define("e1_recosfUnc", syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e1_eta), e1_pt})','csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e1_eta), e1_pt})'))
+        
         # ID
         samples = samples.Define("e1_idsf",     'csetEl_all->evaluate({"'+str(year)+'", "sf", "Tight", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_idsfUp",   'csetEl_all->evaluate({"'+str(year)+'", "sfup", "Tight", std::abs(e1_eta), e1_pt})')
+        samples = samples.Define("e1_idsfDown", 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "Tight", std::abs(e1_eta), e1_pt})')
         samples = samples.Define("e1_idsfUnc",   syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "Tight", std::abs(e1_eta), e1_pt})', 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "Tight", std::abs(e1_eta), e1_pt})'))
 
         if ch != 'ee':
@@ -61,9 +76,13 @@ def compute_object_scale_factors(samples, ch, year, k, files_names):
             
             # Reco
             samples = samples.Define("e2_recosf",   'csetEl_all->evaluate({"'+str(year)+'", "sf", "RecoAbove20", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_recosfUp", 'csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_recosfDown", 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})')
             samples = samples.Define("e2_recosfUnc", syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})','csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})'))
             # ID
             samples = samples.Define("e2_idsf",     'csetEl_all->evaluate({"{}", "sf", "Tight", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_idsfUp",   'csetEl_all->evaluate({"{}", "sfup", "Tight", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_idsfDown", 'csetEl_all->evaluate({"{}", "sfdown", "Tight", std::abs(e2_eta), e2_pt})')
             samples = samples.Define("e2_idsfUnc",  syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "Tight", std::abs(e2_eta), e2_pt})', 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "Tight", std::abs(e2_eta), e2_pt})'))
             
             samples = combine_insert_weight(samples, 'e_sf_weight', ['e1_recosf', 'e1_idsf', 'e2_recosf', 'e2_idsf'], make_variations=True)
@@ -86,6 +105,8 @@ def compute_trigger_scale_factors(samples, year, ch):
     if ch == 'mu': 
         samples = samples.Filter("mu1_pt>25") 
         samples = samples.Define("mu1_trgsf", 'csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"nominal"})')
+        samples = samples.Define("mu1_trgsfUp", 'csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"systup"})')
+        samples = samples.Define("mu1_trgsfDown", 'csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"systdown"})')
         samples = samples.Define('mu1_trgsfUnc', quadrature_sum_expr(['csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"stat"})', 'csetMu_trg->evaluate({std::abs(mu1_eta), mu1_pt,"syst"})']))
         
         samples = combine_insert_weight(samples, 'tot_sf_weight', ['mu_sf_weight', 'mu1_trgsf'], make_variations=True)
@@ -93,23 +114,27 @@ def compute_trigger_scale_factors(samples, year, ch):
     elif ch == 'mumu':
         samples = samples.Define("trg_sf_weight",    "get_mumu_trigger_sf(mu1_pt, mu2_pt)")
         samples = samples.Define('trg_sf_weightUnc', "get_mumu_trigger_sf(mu1_pt, mu2_pt, "+str(year)+",true)")
+        samples = define_sf_variations(samples, "trg_sf_weight")
         
         samples = combine_insert_weight(samples, 'tot_sf_weight', ['mu_sf_weight', 'trg_sf_weight'], make_variations=True)
 
     elif ch == 'emu':
         samples = samples.Define("trg_sf_weight",    'get_emu_trigger_sf(e1_pt, mu1_pt)')
         samples = samples.Define('trg_sf_weightUnc', 'get_emu_trigger_sf(e1_pt, mu1_pt, "'+str(year)+'",true)')
+        samples = define_sf_variations(samples, "trg_sf_weight")
         
         samples = combine_insert_weight(samples, 'tot_sf_weight', ['mu_sf_weight', 'e_sf_weight', 'trg_sf_weight'], make_variations=True)
 
     elif ch == 'ee':
         samples = samples.Define("trg_sf_weight",    "get_ee_trigger_sf(e1_pt, e2_pt)")
         samples = samples.Define('trg_sf_weightUnc', "get_ee_trigger_sf(e1_pt, e2_pt, "+str(year)+",true)")
+        samples = define_sf_variations(samples, "trg_sf_weight")
         
         samples = combine_insert_weight(samples, 'tot_sf_weight', ['e_sf_weight', 'trg_sf_weight'], make_variations=True)
     elif ch == 'e':
         samples = samples.Define("e1_trgsf", 'get_single_e_trigger_sf(e1_pt,e1_eta)')
         samples = samples.Define('e1_trgsfUnc', 'get_single_e_trigger_sf(e1_pt,e1_eta, '+str(year)+', true)')
+        samples = define_sf_variations(samples, "e1_trgsf")
         
         samples = combine_insert_weight(samples, 'tot_sf_weight', ['e_sf_weight', 'e1_trgsf'], make_variations=True)
     
@@ -128,18 +153,14 @@ def compute_additional_scale_factors(samples, k, files_names):
     Returns:
         Modified RDataFrame with additional scale factors applied
     """
-    # L1 pre-firing
-    # - nominal value already in nanoAOD
-    samples = samples.Define("L1PreFiringWeight_Unc", syst_fromvar_expr("L1PreFiringWeight_Up", "L1PreFiringWeight_Dn"))
-
-    # PU reweighting
-    #- nominal value already in nanoAOD
-    samples = samples.Define("puWeightUnc", syst_fromvar_expr("puWeightUp", "puWeightDown"))
     
-    # Top pT reweighting for TTbar samples
+    # Top pT reweighting for TTbar samples + sys. uncertainty (difference between applying or not the reweight)
     if 'TTT' in files_names[k] or 'BsToTauTau' in files_names[k]:
         samples = samples.Define("top_pt_weight", "top_ptweight(GenCand_pt, GenCand_id)")
-        samples = samples.Define("top_pt_weightUnc", "fabs(1-top_pt_weight)") # FIXME not sure is correct
+    else :
+        samples = samples.Define("top_pt_weight", "1.f")
+    samples = samples.Define("top_pt_weightUp",   "top_pt_weight >= 1.f ? top_pt_weight : 1.f") 
+    samples = samples.Define("top_pt_weightDown", "top_pt_weight <  1.f ? top_pt_weight : 1.f")
     
     return samples
 
@@ -241,32 +262,56 @@ def compute_btagging_scale_factors(samples, ch, wp="L"):
     )
 
     # up/down total variation
-    # (!) light SFs varied down(up) for the up(down) variation as anti-correlate to total event weight
+    # vary up/down the bc and light SFs separately
     samples = samples.Define(
-        "btag_sfUp",
-        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjetsUp, btag_sf_lightjetsDown)"
+        "btag_sf_bcUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjetsUp, btag_sf_lightjets)"
     )
     samples = samples.Define(
-        "btag_sfDown",
-        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjetsDown, btag_sf_lightjetsUp)"
+        "btag_sf_bcDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjetsDown, btag_sf_lightjets)"
+    )
+    samples = samples.Define(
+        "btag_sf_lightUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjetsUp)"
+    )
+    samples = samples.Define(
+        "btag_sf_lightDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjetsDown)"
     )
     # up/down year-correlated variation
     samples = samples.Define(
-        "btag_sf_corrUp",
-        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_corrUp, btag_sf_lightjets_corrDown)"
+        "btag_sf_bccorrUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_corrUp, btag_sf_lightjets)"
     )
     samples = samples.Define(
-        "btag_sf_corrDown",
-        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_corrDown, btag_sf_lightjets_corrUp)"
+        "btag_sf_bccorrDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_corrDown, btag_sf_lightjets)"
+    )
+    samples = samples.Define(
+        "btag_sf_lightcorrUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjets_corrUp)"
+    )
+    samples = samples.Define(
+        "btag_sf_lightcorrDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjets_corrDown)"
     )
     # up/down year-uncorrelated variation
     samples = samples.Define(
-        "btag_sf_uncorrUp",
-        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_uncorrUp, btag_sf_lightjets_uncorrDown)"
+        "btag_sf_bcuncorrUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_uncorrUp, btag_sf_lightjets)"
     )
     samples = samples.Define(
-        "btag_sf_uncorrDown",
-        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_uncorrDown, btag_sf_lightjets_uncorrUp)"
+        "btag_sf_bcuncorrDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets_uncorrDown, btag_sf_lightjets)"
+    )
+    samples = samples.Define(
+        "btag_sf_lightuncorrUp",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjets_uncorrUp)"
+    )
+    samples = samples.Define(
+        "btag_sf_lightuncorrDown",
+        "merge_btag_sfs(selected_jets_for_histo_hadronFlavour, btag_sf_bcjets, btag_sf_lightjets_uncorrDown)"
     )
  
     return samples
@@ -282,19 +327,19 @@ def compute_btagging_event_weight(samples, ch, wp):
         "btag_event_weight",
         f'compute_event_weight(selected_jets_for_histo_deepflavB, {threshold}, btag_sf, selected_jets_for_histo_hadronFlavour, selected_jets_for_histo_eta, selected_jets_for_histo_pt, "{wp}")'
     )
-    # up/down variations (total, correlated, uncorrelated)
-    # FIXME: varying up(down) the bc (light) SF for the total up variation (opposite for down)
-    #        maybe too conservative but easier for the moment
+    # up/down variations (total, correlated, uncorrelated) separately for bc and light jets SFs
     name_variation = zip(
-        ["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
-        ["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
+        #["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
+        #["Up", "Down", "_corrUp", "_corrDown", "_uncorrUp", "_uncorrDown"],
+        ["bcUp", "bcDown", "lightUp", "lightDown", "bccorrUp", "bccorrDown", "lightcorrUp", "lightcorrDown", "bcuncorrUp", "bcuncorrDown", "lightuncorrUp", "lightuncorrDown"],
+        ["bcUp", "bcDown", "lightUp", "lightDown", "bccorrUp", "bccorrDown", "lightcorrUp", "lightcorrDown", "bcuncorrUp", "bcuncorrDown", "lightuncorrUp", "lightuncorrDown"] 
     )
     for var_suffix, sf_suffix in name_variation:
         samples = samples.Define(
-            f"btag_event_weight{var_suffix}",
-            f'compute_event_weight(selected_jets_for_histo_deepflavB, {threshold}, btag_sf{sf_suffix}, selected_jets_for_histo_hadronFlavour, selected_jets_for_histo_eta, selected_jets_for_histo_pt, "{wp}")'
+            f"btag_event_weight_{var_suffix}",
+            f'compute_event_weight(selected_jets_for_histo_deepflavB, {threshold}, btag_sf_{sf_suffix}, selected_jets_for_histo_hadronFlavour, selected_jets_for_histo_eta, selected_jets_for_histo_pt, "{wp}")'
         )
-    samples = samples.Define("btag_event_weightUnc", syst_fromvar_expr("btag_event_weightUp", "btag_event_weightDown"))
+    #samples = samples.Define("btag_event_weightUnc", syst_fromvar_expr("btag_event_weightUp", "btag_event_weightDown"))
  
     return samples
 

@@ -348,11 +348,12 @@ def declare_sfs_cpp_functions(year='2018'):
     }
     """)
 
-def combine_insert_weight(
+def combine_insert_weight( # FIXME : define_combine_weights() and use it for both SFs and systematics variations
     sample,
     w_name,
     sf_branches,
     unc_branches=None,
+    nominal_only=False,
     make_variations=True,
     debug = False
 ):
@@ -368,6 +369,8 @@ def combine_insert_weight(
     
     if unc_branches is None:
         unc_branches = [b.removesuffix("Nom") + "Unc" for b in sf_branches]
+    elif len(sf_branches) != len(unc_branches):
+        raise ValueError("sf_branches and unc_branches must have the same length")
     
     # SF branch not found -> ERROR
     # SF-uncertainty branch not found -> WARNING, define it as 0.0
@@ -375,17 +378,17 @@ def combine_insert_weight(
         if b not in sample.GetColumnNames():
             raise ValueError(f"SF branch '{b}' not found in sample")
     for b in unc_branches:
-        if b not in sample.GetColumnNames():
+        if b not in sample.GetColumnNames() and not nominal_only:
             print(f"Warning: Uncertainty branch '{b}' not found in sample, setting it to 0.0")
             sample = sample.Define(b, "0.0")
-    if len(sf_branches) != len(unc_branches):
-        raise ValueError("sf_branches and unc_branches must have the same length")
 
     # nominal combination
     weight_expr = "*".join(sf_branches)
     if debug: print(f"Nominal weight expression: {weight_expr}")
     sample = sample.Define(w_name, weight_expr)
 
+    if nominal_only: return sample
+    
     # relative unc. squared
     unc_terms = [
         "({0}/{1})*({0}/{1})".format(unc, sf) for sf, unc in zip(sf_branches, unc_branches)
@@ -397,7 +400,7 @@ def combine_insert_weight(
     if make_variations:
         sample = sample.Define(w_name + "Up", w_name + " + " + w_name + "Unc")
         sample = sample.Define(w_name + "Down", w_name + " - " + w_name + "Unc")
-    
+            
     return sample
 
 def quadrature_sum_expr(string_list):
@@ -411,3 +414,17 @@ def quadrature_sum_expr(string_list):
 
 def syst_fromvar_expr(varup, vardown):
     return "0.5*fabs({0} - {1})".format(varup, vardown)
+
+def var_fromsyst_expr(w_name, direction="Up"):
+    syst = w_name + "Unc"
+    if direction == "Up":
+        return "{0} + {1}".format(w_name, syst)
+    elif direction == "Down":
+        return "{0} - {1}".format(w_name, syst)
+    else:
+        raise ValueError("direction must be 'Up' or 'Down'")
+
+def define_sf_variations(sample, w_name):
+    sample = sample.Define(w_name + "Up", var_fromsyst_expr(w_name, "Up"))
+    sample = sample.Define(w_name + "Down", var_fromsyst_expr(w_name, "Down"))
+    return sample

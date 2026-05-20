@@ -313,16 +313,16 @@ def build_weight_string(k, files_names, options):
     Returns:
         str: Weight expression (e.g., "norm_weight*L1PreFiringWeight_Nom*puWeight*tot_sf_weight").
     """
-    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight']
+    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight',]
 
+    print(f"[{k}] Applying top pT reweighting")
+    weight_terms.append('top_pt_weight')
 
     if options.compute_sfs or options.use_ntuples_with_sfs:
         print(f"[{k}] Applying scale factors")
         weight_terms.append('tot_sf_weight')
 
-        if 'TTT' in files_names.get(k, '') or 'BsToTauTau' in files_names.get(k, ''):
-            print(f"[{k}] Applying top pT reweighting")
-            weight_terms.append('top_pt_weight')
+        #if 'TTT' in files_names.get(k, '') or 'BsToTauTau' in files_names.get(k, ''):
 
     elif options.compute_btag_sfs or options.use_ntuples_with_btag_sfs:
         print(f"[{k}] Applying SFs and btag scale factors")
@@ -344,7 +344,7 @@ def define_total_weight(sample, k, files_names, options):
         Updated RDataFrame with a new column 'total_weight'.
     """
     weight_list = build_weight_string(k, files_names, options).split('*')
-    sample      = sf_cpp.combine_insert_weight(sample, 'tot_weight', weight_list, make_variations=True)
+    sample      = sf_cpp.combine_insert_weight(sample, 'tot_weight', weight_list, make_variations=True, debug=True)
 
     return sample
 

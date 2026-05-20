@@ -86,7 +86,7 @@ def load_mc_samples(ch, mc_samples_names, files_names, tree_name, tree_dir_mc, t
         if not compute_btag_sfs and not use_ntuples_with_sfs and not use_ntuples_with_btag_sfs:
             norm_weight = luminosity_2018 * cross_sections[k] * 1000 / get_genEventSumw(file_name)
             if part_samples:
-                mc_samples[k] = mc_samples[k].Define('norm_weight', f'genWeight*{norm_weight}' )#f'L1PreFiringWeight_Nom*genWeight*puWeight*{norm_weight}')
+                mc_samples[k] = mc_samples[k].Define('norm_weight',     f'genWeight*{norm_weight}')
             else:
                 mc_samples[k] = mc_samples[k].Define('norm_weight', f'L1PreFiringWeight_Nom*genWeight*{norm_weight}')
 
