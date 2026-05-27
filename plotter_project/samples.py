@@ -3,36 +3,39 @@ import ROOT
 # -- years of data taking
 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2#Luminosity_for_pp_13_TeV_data_20
 
-luminosity = { # in fb-1
+luminosity_year = { # in fb-1
     '2016' : {
-        'B_ver1' : -1,
-        'B_ver2' : -1,
-        'C' : -1,
-        'D' : -1,
-        'E' : -1,
-        'total' : 36.33
+        'B_ver1'    : -1,
+        'B_ver2'    : -1,
+        'C'         : -1,
+        'D'         : -1,
+        'E'         : -1,
+        'total'     : 36.33,
+        'unc'       : 0.0120,
     },
     '2017' : {
-        'B' : -1,
-        'C' : -1,
-        'D' : -1,
-        'E' : -1,
-        'F' : -1,
-        'total' : 41.53
+        'B'         : -1,
+        'C'         : -1,
+        'D'         : -1,
+        'E'         : -1,
+        'F'         : -1,
+        'total'     : 41.53,
+        'unc'       : 0.0082,
     },
     '2018' : {
-        'A' : -1,
-        'B' : -1,
-        'C' : -1,
-        'D' : -1,
-        'total' : 59.74
+        'A'         : -1,
+        'B'         : -1,
+        'C'         : -1,
+        'D'         : -1,
+        'total'     : 59.74,
+        'unc'       : 0.0084,
     },
 }
-years = list(luminosity.keys())
+years = list(luminosity_year.keys())
 eras = dict()
-[eras.update({year:list(luminosity[year].keys()).remove('total')}) for year in years]
+[eras.update({year:list(luminosity_year[year].keys()).remove('total')}) for year in years]
 
-luminosity['Run2'] ={'total' : luminosity['2016']['total'] + luminosity['2017']['total'] + luminosity['2018']['total']}
+luminosity_year['Run2'] ={'total' : luminosity_year['2016']['total'] + luminosity_year['2017']['total'] + luminosity_year['2018']['total']}
 
 # FXME : remove
 eras_2018 = ['A','B','C','D']
@@ -48,6 +51,8 @@ data_samples_names = {
     'ee':['data_eg']
 }
 channels = list(data_samples_names.keys())
+## channel-labels
+ch_labels = dict(zip(channels, ["#mu", "e", "e#mu", "#mu#mu", "ee"]))
 
 mc_samples_names = [
     'tt_fullylep',
@@ -94,24 +99,54 @@ files_names['bstautau'] = 'ttbarToBsToTauTau'
 
 #https://twiki.cern.ch/twiki/bin/viewauth/CMS/XsdbTutorialSep#TTbar
 #https://twiki.cern.ch/twiki/bin/viewauth/CMS/SummaryTable1G25ns#Diboson
-cross_sections = {
-    "tt_semilep": 366.29,      # in pb
-    "tt_fullylep": 88.51,      # in pb
-    "tt_had": 378.93,          # in pb
-    "w": 61526,               # in pb
-    "wext": 61526,               # in pb
-    "dy": 6077,               # in pb
-    "dyext": 6077,               # in pb
-    "wz": 47.13,               # in pb
-    "ww": 115.0,               # in pb  # CHECKKK
-    "zz": 16.523,              # in pb
-    "st_s": 3.36,              # in pb
-    "st_t": 44.33,             # in pb  # CHECKKK
-    "st_antit": 26.38,         # in pb  # CHECKKK
-    "st_tw": 35.85,            # in pb  # CHECKKK
-    "st_antitw": 35.85,        # in pb  # CHECKKK
-    "bstautau": 830 * 2 * 0.1 * 6.8 * 0.001 *10,        ## xsec(ttbar) * #b * fs * Br(Bs->tautau) (10 times LHCb)
+#https://twiki.cern.ch/twiki/bin/viewauth/CMS/SummaryTable1G25ns#TTbar
+#https://twiki.cern.ch/twiki/bin/viewauth/CMS/StandardModelCrossSectionsat13TeV
+
+_xsec_ttbar     =   {# in pb (NNLO + NNLL) https://twiki.cern.ch/twiki/bin/view/LHCPhysics/TtbarNNLO
+    'central' : 833.9,
+    'uncertainty' : { # (+,-) +20.5 -30.0	± 21.0	-22.5 +23.2
+        'scale'        : (20.5, 30.0), 
+        'pdf-alphas'   : (21.0, 21.0),
+        #'topmass'      : (22.5, 23.2),
+        'total'        : (36.6, 36.6), # conservative approach, symmetrising the total uncertainty
+    }
 }
+cross_sections  = { #(pb)
+    "tt_semilep": 366.29,       # (NNLO + NNLL) 
+    "tt_fullylep": 88.51,       # (NNLO + NNLL) 
+    "tt_had": 378.93,           # (NNLO + NNLL) 
+    "w": 61526,                 #
+    "wext": 61526,              #
+    "dy": 6077,                 #
+    "dyext": 6077,              #
+    "wz": 47.13,                #
+    "ww": 115.0,                # # CHECKKK
+    "zz": 16.523,               #
+    "st_s": 3.36,               #
+    "st_t": 44.33,              # # CHECKKK
+    "st_antit": 26.38,          # # CHECKKK
+    "st_tw": 35.85,             # # CHECKKK
+    "st_antitw": 35.85,         # # CHECKKK
+    "bstautau": _xsec_ttbar['central'] * 0.16 * 6.8 * 0.001 *10,        ## xsec(ttbar) * filter-efficiency * Br(Bs->tautau) (10 times LHCb)
+}
+cross_sections_relunc = { # for naive uncertainty propagation
+    "tt_semilep"    : _xsec_ttbar['uncertainty']['total'][0]/_xsec_ttbar['central'],
+    "tt_fullylep"   : _xsec_ttbar['uncertainty']['total'][0]/_xsec_ttbar['central'],
+    "tt_had"        : _xsec_ttbar['uncertainty']['total'][0]/_xsec_ttbar['central'],
+    "w"             : 0.0,            
+    "wext"          : 0.0,         
+    "dy"            : 0.0,           
+    "dyext"         : 0.0,        
+    "wz"            : 0.0,           
+    "ww"            : 0.0,           
+    "zz"            : 0.0,          
+    "st_s"          : 0.0,         
+    "st_t"          : 0.0,         
+    "st_antit"      : 0.0,     
+    "st_tw"         : 0.0,        
+    "st_antitw"     : 0.0,    
+    "bstautau"      : 0.0,
+} 
 
 
 ## titles
@@ -132,6 +167,7 @@ titles['st_antit'] = 'ST_t_antitop'
 titles['st_tw'] = 'ST_tW_top'
 titles['st_antitw'] = 'ST_tW_antitop'
 titles['bstautau'] = 'B_{s}#rightarrow #tau #tau'
+
 
 
 ## colours

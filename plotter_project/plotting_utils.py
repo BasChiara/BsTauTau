@@ -36,21 +36,20 @@ def create_canvas_with_pads():
     
     return c1, main_pad, ratio_pad
 
-def initialize_histograms(histos, samples, ch):
+def initialize_histograms(histos, samples, ch, norm_weight = 'tot_weight', sys_uncertainty = True):
     temp_hists = {}
     
     for k, v in histos[ch].items():
         temp_hists[k] = {}
         for kk, vv in samples[ch].items():
             branch_name = k
-            temp_hists[k][f'{k}_{kk}'] = vv.Histo1D(v[0], branch_name, 'tot_weight')
+            temp_hists[k][f'{k}_{kk}'] = vv.Histo1D(v[0], branch_name, norm_weight)
             
             # stat + systematic error
-            if 'data' in kk: continue
-            tmp_histUp   = vv.Histo1D(v[0], branch_name, 'tot_weightUp')
-            tmp_histDown = vv.Histo1D(v[0], branch_name, 'tot_weightDown')
-            for ibin in range(temp_hists[k][f'{k}_{kk}'].GetNbinsX()):
-                
+            if 'data' in kk or not sys_uncertainty: continue
+            tmp_histUp   = vv.Histo1D(v[0], branch_name, norm_weight+'Up')
+            tmp_histDown = vv.Histo1D(v[0], branch_name, norm_weight+'Down')
+            for ibin in range(temp_hists[k][f'{k}_{kk}'].GetNbinsX()): 
                 ths_sys  = 0.5*abs(tmp_histUp.GetBinContent(ibin+1) - tmp_histDown.GetBinContent(ibin+1)) 
                 ths_stat = temp_hists[k][f'{k}_{kk}'].GetBinError(ibin+1)
                 ths_err = math.sqrt(ths_stat**2 + ths_sys**2)
@@ -89,8 +88,8 @@ def compute_ratio_plot(temp_hists, ratio, stats, ratio_pad):
     ratio_stats = stats.Clone()
     ratio_stats.SetName(ratio.GetName()+'_ratiostats')
     ratio_stats.Divide(stats)
-    ratio_stats.SetMaximum(1.49999) # avoid displaying 2, that overlaps with 0 in the main_pad
-    ratio_stats.SetMinimum(0.5) # and this is for symmetry
+    ratio_stats.SetMaximum(1.19999) # avoid displaying 2, that overlaps with 0 in the main_pad
+    ratio_stats.SetMinimum(0.79999) # and this is for symmetry
     ratio_stats.GetYaxis().SetTitle('obs/exp')
     ratio_stats.GetYaxis().SetTitleOffset(0.5)
     ratio_stats.GetYaxis().SetNdivisions(405)

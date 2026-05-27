@@ -2,6 +2,7 @@ import argparse
 import os
 import ROOT
 from weights import *
+import samples as smpl
 
 
 
@@ -54,7 +55,7 @@ def make_directories_for_plots(label, channels):
         os.system('mkdir -p plots/%s/%s/flavor_based/bstautau_not_scaled/lin/C/' %(label,ch))
         os.system('mkdir -p plots/%s/%s/flavor_based/bstautau_not_scaled/lin/root/' %(label,ch))
 
-def load_mc_samples(ch, mc_samples_names, files_names, tree_name, tree_dir_mc, tree_dir_wsfs, tree_dir_btag_sfs, luminosity_2018, cross_sections, trigger_selections, use_ntuples_with_sfs, compute_btag_sfs, use_ntuples_with_btag_sfs, part_samples, nevents = None):
+def load_mc_samples(ch, mc_samples_names, year, files_names, tree_name, tree_dir_mc, tree_dir_wsfs, tree_dir_btag_sfs, intlumi, cross_sections, trigger_selections, use_ntuples_with_sfs, compute_btag_sfs, use_ntuples_with_btag_sfs, part_samples, nevents = None):
     """Load MC samples, apply weights, and trigger selections."""
     mc_samples = dict()
     if compute_btag_sfs or use_ntuples_with_sfs:
@@ -84,9 +85,11 @@ def load_mc_samples(ch, mc_samples_names, files_names, tree_name, tree_dir_mc, t
         # Apply weight normalization if necessary
         # FIXME year dependency
         if not compute_btag_sfs and not use_ntuples_with_sfs and not use_ntuples_with_btag_sfs:
-            norm_weight = luminosity_2018 * cross_sections[k] * 1000 / get_genEventSumw(file_name)
+            norm_weight = intlumi * cross_sections[k] * 1000 / get_genEventSumw(file_name)
+
             if part_samples:
                 mc_samples[k] = mc_samples[k].Define('norm_weight',     f'genWeight*{norm_weight}')
+                mc_samples[k] = mc_samples[k].Define('norm_weightUnc', f'norm_weight*sqrt(({smpl.luminosity_year[year]["unc"]}*{smpl.luminosity_year[year]["unc"]}) + ({smpl.cross_sections_relunc[k]}*{smpl.cross_sections_relunc[k]}))') # FIXME : use sum in quadrature expr
             else:
                 mc_samples[k] = mc_samples[k].Define('norm_weight', f'L1PreFiringWeight_Nom*genWeight*{norm_weight}')
 

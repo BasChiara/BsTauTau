@@ -132,7 +132,7 @@ def main():
             tree_dir          = '/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
             #tree_dir          = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
             tree_dir_wsfs     = '%s/wsfs_snapshots/'%(tree_dir)
-            tree_dir_btag_sfs = '%s/btag_sfs_snapshots/'%(tree_dir)
+            tree_dir_btag_sfs = '%s/btag_sfs_snapshots-sys/'%(tree_dir)
             tree_dir_filtered = '%s/filtered_data_snapshots/'%(tree_dir)
             used_mc_samples_names = info_samples.mc_samples_names  # Use all MC samples including 'bstautau'
 
@@ -141,7 +141,7 @@ def main():
 
         # Handle MC samples
         print("\n====== Loading MC Samples ======")
-        mc_samples = load_mc_samples(ch, used_mc_samples_names, info_samples.files_names, tree_name, tree_dir, tree_dir_wsfs, tree_dir_btag_sfs, info_samples.luminosity_2018, info_samples.cross_sections, trigger_selections, use_ntuples_with_sfs, compute_btag_sfs, use_ntuples_with_btag_sfs, part_samples, nevents)
+        mc_samples = load_mc_samples(ch, used_mc_samples_names, year, info_samples.files_names, tree_name, tree_dir, tree_dir_wsfs, tree_dir_btag_sfs, info_samples.luminosity_2018, info_samples.cross_sections, trigger_selections, use_ntuples_with_sfs, compute_btag_sfs, use_ntuples_with_btag_sfs, part_samples, nevents)
         samples[ch].update(mc_samples)
 
         # Handle data samples
@@ -227,7 +227,7 @@ def main():
                     os.makedirs(output_dir)
 
                 #plot_event_weight_2d(samples[ch][k], 'sfs_plots/')
-                save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
+                #save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
 
 
             # FIXME : this part does not work
@@ -241,7 +241,7 @@ def main():
 
 
             # Define histogram-specific b-tagging branches AFTER filtering (won't be in snapshots)
-            samples[ch][k] = define_jets_with_btagging_selection_for_histos(samples[ch][k], part_samples=part_samples, plot_all_jets=plot_all_jets)
+            samples[ch][k]     = define_jets_with_btagging_selection_for_histos(samples[ch][k], part_samples=part_samples, plot_all_jets=plot_all_jets)
             ## define bstautau mask for different tau decay modes
             if 'bstautau' in k:
                 samples[ch][k] = define_bstautau_taudecaymodes_mask(samples[ch][k])
@@ -256,6 +256,7 @@ def main():
 
             if part_samples: #using updated samples with part scores
                 samples[ch][k] = define_combined_scores(samples[ch][k], tau_scores, parT_scores, bkg_scores, 'bstautau' in k, bstautau_conditions)
+                save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
                 
                 if plot_part_selections:
                     # Apply  cuts filter and ONLY use those histograms
