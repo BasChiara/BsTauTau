@@ -15,6 +15,10 @@ def declare_sfs_cpp_functions(year='2018'):
     ROOT.gInterpreter.Declare('auto csetBtag        = correction::CorrectionSet::from_file("/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2018-UL-NanoAODv9/latest/btagging.json.gz");')#"sfs/btagging.json");')
     ROOT.gInterpreter.Declare('auto csetBtag_mujets = csetBtag->at("deepJet_mujets");')
     ROOT.gInterpreter.Declare('auto csetBtag_incl   = csetBtag->at("deepJet_incl");')
+    # JES and JER #
+    ROOT.gInterpreter.Declare('auto csetJERC = correction::CorrectionSet::from_file("/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/latest/jet_jerc.json.gz");')
+    ROOT.gInterpreter.Declare('auto csetJEC_compound = csetJERC->compound().at("Summer19UL18_V5_MC_L1L2L3Res_AK4PFchs");')
+
 
     #
     # ----- SF Functions ----- #
@@ -89,7 +93,7 @@ def declare_sfs_cpp_functions(year='2018'):
 
         void load_sfshisto_ee(TString year = "2018") {
             if (ee_trg_sf_file == nullptr) {
-                ee_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_+year+.root", "READ");
+                ee_trg_sf_file = TFile::Open("sfs/dilepton_trigger_sfs_"+year+".root", "READ");
                 if (!ee_trg_sf_file || !ee_trg_sf_file->IsOpen()) {
                     std::cerr << "Error: File not found or unable to open!" << std::endl;
                 }
@@ -347,6 +351,70 @@ def declare_sfs_cpp_functions(year='2018'):
          return weight;
     }
     """)
+
+def declare_JET_cpp_functions(): #porkaround -FIXME
+    ## JET corrections
+    ROOT.gInterpreter.Declare("""
+    #include <correction.h>
+                              
+    std::vector<float> compoundLevel(
+        const ROOT::VecOps::RVec<float>& area,
+        const ROOT::VecOps::RVec<Float_t>& eta,
+        const ROOT::VecOps::RVec<Float_t>& pt,
+        float rho)
+    {
+        std::vector<float> corrected_pt(pt.size());
+        for (size_t i = 0; i < pt.size(); i++) {
+            corrected_pt[i] = csetJEC_compound->evaluate({area[i], eta[i], pt[i] > 15.0 ? pt[i] : 15.01, rho});
+        }
+        return corrected_pt;
+    }
+    
+    std::vector<float> singleLevel(
+        const ROOT::VecOps::RVec<float>& area,
+        const ROOT::VecOps::RVec<Float_t>& eta,
+        const ROOT::VecOps::RVec<Float_t>& pt,
+        float rho,
+        const std::string& jec, const std::string& lvl, const std::string& algo,
+        const bool verbose = false)
+    {
+        // collect the correction
+        std::string key = jec + "_" + lvl + "_" + algo;
+        if (verbose) {
+            std::cout << "Evaluating JEC with key: " << key << std::endl;
+        }
+        auto sf = csetJERC->at(key);
+         
+        
+        std::vector<float>   out_sf(pt.size());
+        for (size_t i = 0; i < pt.size(); i++) {
+            
+            // built the map of expected inputs for this jet
+            std::map<std::string, correction::Variable::Type> jet_vars = {
+                {"JetPt", pt[i] > 15.0 ? pt[i] : 15.01},
+                {"JetEta", eta[i]},
+                {"JetPhi", 0.0}, //FIXME
+                {"JetA", 0.5}, //FIXME
+                {"Rho", 15.0}, //FIXME
+                {"systematic", "nom"},
+                {"GenPt", 80.0}, //FIXME
+                {"EventID", 12345}, //FIXME
+            };
+            vector<correction::Variable::Type> jet_inputs;
+            if (verbose) std::cout << "Jet : " << i << " inputs:";
+            for (const correction::Variable &input : sf->inputs()) {
+                if (verbose) std::cout << ' ' << input.name();
+                jet_inputs.push_back(jet_vars.at(input.name()));
+            }
+            if (verbose) std::cout << std::endl;
+            out_sf[i] = sf->evaluate(jet_inputs);
+        }
+        return out_sf;
+    }                     
+    """)
+    
+
+
 
 def combine_insert_weight( # FIXME : define_combine_weights() and use it for both SFs and systematics variations
     sample,

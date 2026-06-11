@@ -3,6 +3,7 @@ Scale Factor computation functions for different physics objects and channels.
 """
 
 from sf_cpp_functions import *
+import sf_config
 import ROOT
 from array import array
 import numpy as np
@@ -75,10 +76,10 @@ def compute_object_scale_factors(samples, ch, year, k, files_names):
             samples = samples.Filter("e2_pt>20")
             
             # Reco
-            samples = samples.Define("e2_recosf",   'csetEl_all->evaluate({"'+str(year)+'", "sf", "RecoAbove20", std::abs(e2_eta), e2_pt})')
-            samples = samples.Define("e2_recosfUp", 'csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})')
-            samples = samples.Define("e2_recosfDown", 'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})')
-            samples = samples.Define("e2_recosfUnc", syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})','csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})'))
+            samples = samples.Define("e2_recosf",       'csetEl_all->evaluate({"'+str(year)+'", "sf", "RecoAbove20", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_recosfUp",     'csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_recosfDown",   'csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})')
+            samples = samples.Define("e2_recosfUnc",    syst_fromvar_expr('csetEl_all->evaluate({"'+str(year)+'", "sfup", "RecoAbove20", std::abs(e2_eta), e2_pt})','csetEl_all->evaluate({"'+str(year)+'", "sfdown", "RecoAbove20", std::abs(e2_eta), e2_pt})'))
             # ID
             samples = samples.Define("e2_idsf",     'csetEl_all->evaluate({"{}", "sf", "Tight", std::abs(e2_eta), e2_pt})')
             samples = samples.Define("e2_idsfUp",   'csetEl_all->evaluate({"{}", "sfup", "Tight", std::abs(e2_eta), e2_pt})')
@@ -164,6 +165,22 @@ def compute_additional_scale_factors(samples, k, files_names):
     
     return samples
 
+def compute_JESR_scale_factors(samples, ch, year, k, files_names):
+    """
+    Compute Jet Energy Scale and Resolution scale factors.
+    
+    """
+    # FIXME : placeholders for event rho and jet area
+    samples = samples.Define("j_tmparea", "ROOT::RVec<float>(j_pt.size(), 0.5f)") # placeholder for jet area, needed for JER SFs
+    samples = samples.Define("Rho_tmp", "15.0f") # placeholder for event rho, needed for JER SFs
+
+    samples = samples.Define("j_JEC_pt", 'compoundLevel(j_tmparea, j_eta, j_pt, Rho_tmp)')
+    # JES uncertainties
+    for unc in sf_config.JES_uncertainties:
+        samples = samples.Define(f"j_JES_{unc}", f'singleLevel(j_tmparea, j_eta, j_pt, Rho_tmp, "Summer19UL18_V5_MC", "{unc}", "{sf_config.algo_ak4}")')
+
+    return samples    
+
 
 def compute_all_scale_factors(samples, ch, year, k, files_names):
     """
@@ -186,6 +203,11 @@ def compute_all_scale_factors(samples, ch, year, k, files_names):
     # Compute trigger scale factors
     print(f"\ttrigger scale factors")
     samples = compute_trigger_scale_factors(samples, year, ch)
+
+    # Compute Jet energy corrections
+    declare_JET_cpp_functions() # porkaround
+    print(f"\tjet energy scale and resolution factors")
+    samples = compute_JESR_scale_factors(samples, ch, year, k, files_names)
     
     # Compute additional scale factors
     print(f"\tadditional scale factors")

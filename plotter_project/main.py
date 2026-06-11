@@ -127,7 +127,13 @@ def main():
             info_samples.files_names['st_tw'] = 'ST_tW_top'
             # Remove 'bstautau' from mc_samples_names if present
             used_mc_samples_names = [name for name in info_samples.mc_samples_names if name != 'bstautau']
-            
+        elif args.test:
+            print("---- TEST MODE ----")
+            tree_dir          = '/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
+            tree_dir_wsfs     = './tmp_out/wsfs_snapshots/'
+            tree_dir_btag_sfs = './tmp_out/btag_sfs_snapshots-sys/'
+            tree_dir_filtered = './tmp_out/filtered_data_snapshots/'
+            used_mc_samples_names = info_samples.mc_samples_names[:2]  # Only use the first MC sample (e.g., 'bstautau') for testing
         else:
             tree_dir          = '/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
             #tree_dir          = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
@@ -227,7 +233,7 @@ def main():
                     os.makedirs(output_dir)
 
                 #plot_event_weight_2d(samples[ch][k], 'sfs_plots/')
-                #save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
+                save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
 
 
             # FIXME : this part does not work
@@ -256,7 +262,7 @@ def main():
 
             if part_samples: #using updated samples with part scores
                 samples[ch][k] = define_combined_scores(samples[ch][k], tau_scores, parT_scores, bkg_scores, 'bstautau' in k, bstautau_conditions)
-                save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
+                #FIXME : at some point I want the save step here save_samples_with_btagging_sfs(samples[ch][k], ch, k, info_samples.files_names, output_dir=output_dir)
                 
                 if plot_part_selections:
                     # Apply  cuts filter and ONLY use those histograms
