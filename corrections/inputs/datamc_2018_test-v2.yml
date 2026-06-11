@@ -1,0 +1,7 @@
+MC :
+  inpath_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_{channel}_2018_ParT"
+  year: 2018
+  treename : Events
+  outpath_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_{channel}_2018_ParT/sfs_applied"
+data:
+  path_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_{channel}_2018_ParT"
