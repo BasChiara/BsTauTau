@@ -15,6 +15,14 @@ object_sfs ={
             'file' : '/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/latest/electron.json.gz',
             'all'  : 'UL-Electron-ID-SF',
         },
+        'dileptrg' : {
+            'file' : './sf_toolkit/dilepton_trigger_sfs_2018.root',
+            'hname': 'h2D_SF_{channel}_lepABpt_FullError'
+        },
+        'eletrg'   : {
+            'file'  : './sf_toolkit/electron_trigger_"+year+".root',
+            'hname' : 'EGamma_SF2D'
+        },
         'btag' : {
             'file'   : '/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2018-UL-NanoAODv9/latest/btagging.json.gz',
             'mujets' : 'deepJet_mujets',

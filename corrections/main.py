@@ -5,10 +5,9 @@ import os, sys
 import argparse
 import ROOT
 import uproot
-import awkward as ak
 import numpy as np
 
-nevents = 10
+nevents = 11
 
 # custom imports
 import data_toolkit as data
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     _testmode_ = args.test
 
 
-    # samples
+    #  get samples
     tree_dir_base = in_info.get('MC', {}).get('inpath_template', None)
     out_dir_base  = args.outdirectory if args.outdirectory is not None else in_info.get('MC', {}).get('outpath_template', None)
 
@@ -98,7 +97,7 @@ if __name__ == "__main__":
         data.ioutils.checkpath(tree_dir, isdir=True, mustexist=True)
         out_dir  = out_dir_base.format(channel=ch)
         data.ioutils.checkpath(out_dir, isdir=True, mustexist=False)
-        print(f" + input directory: {tree_dir}")
+        print(f" + {tree_dir}")
 
         mc_samples = data.ioutils.load_mc_samples(
             tree_dir,
@@ -110,7 +109,7 @@ if __name__ == "__main__":
         )
         samples[ch].update(mc_samples)
         
-        print ("\n--------- PROCESSING SAMPLES ---------")
+        print ("\n--------- PROCESSING SAMPLES ---------\n")
         for name, rdf in samples[ch].items():
             print(f"\n>[{name}]")
             samples[ch][name] = samples[ch][name].Define("entry_idx", "rdfentry_")
@@ -150,7 +149,6 @@ if __name__ == "__main__":
             samples[ch][name] = samples[ch][name].Filter(pre_sel)
 
             # jet conditions
-            
             print(f" [SKIM] jet selection: {jet_sel}")
             samples[ch][name] = samples[ch][name].Filter(f"ROOT::VecOps::Any({jet_sel})")
 
@@ -174,8 +172,18 @@ if __name__ == "__main__":
                 assert np.all(np.diff(entry_idx) > 0), "entry_idx should be a sequence of consecutive integers starting from 0"
                 print(f" + {tree.num_entries} events read from {tmp_outpath}")
 
+                # object scale factors
                 objsf_branches = sf.sf_computation.compute_obj_sf(tree, ch, year)
                 new_branches.update(objsf_branches)
+
+                # trigger scale factors
+                trgsf_branches  = sf.sf_computation.compute_trigger_sf(tree, ch, year)
+                new_branches.update(trgsf_branches)
+
+                # top pT re-weight in ttbar
+                topsf_branches = sf.sf_computation.compute_top_pTreweight(tree, 'tt' in name or 'bstautau' in name)
+                new_branches.update(topsf_branches)
+
                 print(new_branches)
                 
             # save new branches with SFs to a new root file
