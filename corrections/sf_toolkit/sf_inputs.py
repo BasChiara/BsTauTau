@@ -16,17 +16,19 @@ object_sfs ={
             'all'  : 'UL-Electron-ID-SF',
         },
         'dileptrg' : {
-            'file' : './sf_toolkit/dilepton_trigger_sfs_2018.root',
+            'file' : './sf_toolkit/histograms/dilepton_trigger_sfs_2018.root',
             'hname': 'h2D_SF_{channel}_lepABpt_FullError'
         },
         'eletrg'   : {
-            'file'  : './sf_toolkit/electron_trigger_"+year+".root',
+            'file'  : './sf_toolkit/histograms/electron_trigger_"+year+".root',
             'hname' : 'EGamma_SF2D'
         },
         'btag' : {
             'file'   : '/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2018-UL-NanoAODv9/latest/btagging.json.gz',
             'mujets' : 'deepJet_mujets',
             'incl'   : 'deepJet_incl',
+            'eff'    : './sf_toolkit/histograms/0520A050-AF68-EF43-AA5B-5AA77C74ED73_out.root',
+            'effname': 'h2_{workingpoint}Eff_{jetflavor}'
         },
     }
 }

@@ -1,6 +1,14 @@
 import ROOT
 import yaml
 
+# -- FUNCTIONS
+def parse_inyml(infile):
+    
+    with open(infile, 'r') as f:
+        input_data = yaml.safe_load(f)
+    return input_data
+
+
 # -- years of data taking
 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2#Luminosity_for_pp_13_TeV_data_20
 
@@ -52,6 +60,7 @@ data_samples_names = {
     'ee':['data_eg']
 }
 channels = list(data_samples_names.keys())
+
 ## channel-labels
 ch_labels = dict(zip(channels, ["#mu", "e", "e#mu", "#mu#mu", "ee"]))
 
@@ -148,16 +157,6 @@ _xsec_samples_relunc = { # for naive uncertainty propagation
     "st_antitw"     : 0.0,    
     "bstautau"      : 0.0,
 } 
-
-
-# parse imput yaml
-def parse_inyml(infile):
-    
-    with open(infile, 'r') as f:
-        input_data = yaml.safe_load(f)
-    return input_data
-
-
 
 ## titles
 titles = dict()

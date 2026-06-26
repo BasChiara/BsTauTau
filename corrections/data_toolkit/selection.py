@@ -132,3 +132,16 @@ bstautau_conditions = {
     "tauhtaue":     "SigJetMaskTauhtaue",
     "tauhtaumu":    "SigJetMaskTauhtaumu"
 }
+
+# --- BTAG working point ---
+btag_wpval  = { #FIXME :check - https://btv-wiki.docs.cern.ch/ScaleFactors/Run2UL2018NanoAODv9/
+    'L' : 0.0499,
+    'M' : 0.2770,
+}
+btag_chwp   = {
+    'emu'   : ('L',btag_wpval['L']),
+    'ee'    : ('L',btag_wpval['L']),
+    'mmu'   : ('L',btag_wpval['L']),
+    'e'     : ('L',btag_wpval['L']),
+    'mu'    : ('M',btag_wpval['M']),
+}

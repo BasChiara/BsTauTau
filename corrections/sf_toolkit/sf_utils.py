@@ -138,13 +138,10 @@ def top_pt_weight(pt):
 
 def eval_toppt_sf(genpt, genid, isttbar):
     #https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting
+   
+    if not isttbar : return np.ones(len(genpt), dtype=np.float64)
     
-    nevents = len(genpt)
-    sf  =  np.ones(nevents, dtype=np.float64)
-
-    if not isttbar : return sf
-    
-    MAX_tpT = 499.99
+    MAX_tpT = 500.
     is_top  = (genid ==  6)
     is_atop = (genid == -6)
     # FIXME: for some reason there are 2 top and 2 anti-top
@@ -152,10 +149,131 @@ def eval_toppt_sf(genpt, genid, isttbar):
     top_pt  = np.minimum(ak.to_numpy(genpt[is_top][..., -1]),  MAX_tpT)
     atop_pt = np.minimum(ak.to_numpy(genpt[is_atop][..., -1]), MAX_tpT)
 
-    print(atop_pt)
-
     return top_pt_weight(top_pt) * top_pt_weight(atop_pt)
 
 
 # b-tag scale factor
+def eval_btag(cset, syst, wp, flav, eta, pt, mask, abs_eta=True):
+    """
+        Evaluate a b-tag SF on masked jagged jets, returning a jagged SF array.
+        flatten -> evaluate -> unflatten
+
+    """
+
+    n   = ak.num(flav[mask]) #counts per-event -> re-built structure at unflatten stage
+    
+    # flatten
+    f   = ak.to_numpy(ak.flatten(flav[mask])).astype(np.int32)
+    e   = ak.to_numpy(ak.flatten(eta[mask])).astype(np.float64)
+    p   = ak.to_numpy(ak.flatten(pt[mask])).astype(np.float64)
+    if abs_eta:
+        e = np.abs(e)
+    
+    # evaluate and unflatten
+    return ak.unflatten(cset.evaluate(syst, wp, f, e, p), n)
+
+def merge_btag_sfs(flav, bc_sfs, l_sfs):
+    """
+    Merge per-flavor btag SFs back into one per-jet array matching `flav`'s layout.
+      flav   : jagged (nevents, nJets) hadronFlavour
+      bc_sfs : jagged SFs for heavy-flavour jets (flav != 0), bc-subset layout
+      l_sfs  : jagged SFs for light jets (flav == 0), light-subset layout
+    Returns a jagged SF array with the SAME layout as `flav`.
+    """
+    n = ak.num(flav)                                  # jets per event (original)
+    flat_flav = ak.to_numpy(ak.flatten(flav))         # 1D, all jets in order
+
+    sf = np.ones(len(flat_flav), dtype=np.float64)    # one slot per jet
+    bc = (flat_flav != 0)
+    light = ~bc
+
+    # bc_sfs / l_sfs are jagged in their own subspace -> flatten to 1D
+    sf[bc]    = ak.to_numpy(ak.flatten(bc_sfs))
+    sf[light] = ak.to_numpy(ak.flatten(l_sfs))
+
+    return ak.unflatten(sf, n)                        # re-jag to flav's layout
+
+def load_eff2Dhisto(cfg, wp = "L"):
+ 
+    histfile        =  cfg.get('eff', None)
+    histname_tmpl   =  cfg.get('effname', None)
+    eff_hist_b  =  load_histo(histfile, histname_tmpl.format(workingpoint=wp, jetflavor='b'))
+    eff_hist_c  =  load_histo(histfile, histname_tmpl.format(workingpoint=wp, jetflavor='c'))
+    eff_hist_l  =  load_histo(histfile, histname_tmpl.format(workingpoint=wp, jetflavor='udsg'))
+    
+    if (not eff_hist_b) or (not eff_hist_c) or (not eff_hist_l) :
+        print(f"ERROR: b-tag efficiency histos for {wp} working point NOT FOUND.")
+        return None, None, None
+    
+    return eff_hist_b, eff_hist_c, eff_hist_l
+
+def eval_btag_efficiency(f_flav, f_eta, f_pt, wp, cfg):
+    """
+    b-tagging efficiency from histogram based on flat input
+    """
+
+    # get efficiency histograms by flavor
+    heff_b, heff_c, heff_light = load_eff2Dhisto(cfg, wp)
+    if (not heff_b) or (not heff_c) or (not heff_light) :
+        print(f"ERROR: b-tag efficiency histos for {wp} working point NOT IMPORTED.")
+        return False
+
+    # evaluate efficiency
+    MAX_jpt = 1000
+    clamp_pt = np.minimum(f_pt, MAX_jpt)
+    
+    eff  = np.ones_like(f_pt, dtype=np.float64)
+    is_b = (f_flav == 5)
+    is_c = (f_flav == 4)
+    is_l = (f_flav == 0)
+
+    eff[is_b] = np.array([ heff_b.GetEfficiency(heff_b.FindFixBin(x, y))         for x, y in zip(clamp_pt[is_b], np.abs(f_eta[is_b])) ], dtype=np.float64)
+    eff[is_c] = np.array([ heff_c.GetEfficiency(heff_c.FindFixBin(x, y))         for x, y in zip(clamp_pt[is_c], np.abs(f_eta[is_c])) ], dtype=np.float64)
+    eff[is_l] = np.array([ heff_light.GetEfficiency(heff_light.FindFixBin(x, y)) for x, y in zip(clamp_pt[is_l], np.abs(f_eta[is_l])) ], dtype=np.float64)
+
+    return np.minimum(eff, 1.-1e-6)
+
+def eval_event_btag(discr, wp, wp_val, bc_sfs, l_sfs, flav, eta, pt, cfg, debug =False):
+    """
+    Per-event btag scale factor according to BTV recomendation
+    https://btv-wiki.docs.cern.ch/PerformanceCalibration/fixedWPSFRecommendations/
+        tagged jet   -> SF
+        untagged jet -> (1 - SF*eff) / (1 - eff)
+    """
+    
+    # merge bc and light SFs
+    sf = merge_btag_sfs(flav, bc_sfs, l_sfs)
+
+    # separate b-tagged and weight untagged by the efficiency
+    n         = ak.num(sf)                      
+    sf_flat   = ak.to_numpy(ak.flatten(sf))
+    tag_flat  = ak.to_numpy(ak.flatten(discr > wp_val))
+
+    # load btag efficiency
+
+    eff = eval_btag_efficiency(
+        ak.to_numpy(ak.flatten(flav)), ak.to_numpy(ak.flatten(eta)), ak.to_numpy(ak.flatten(pt)),
+        wp, cfg
+    )
+    
+    #1e-1*np.ones_like(sf_flat) #FIXME: placeholder
+
+    # per-jet weight
+    w_flat = np.where( # get SF ((1-SF*eff)/(...)) if tag_flat = True(False)
+        tag_flat,
+        sf_flat,
+        (1-sf_flat*eff)/(1-eff)
+    )
+    # re-jag and multiply over jets in each event
+    w_jagged = ak.unflatten(w_flat, n)
+    
+    if debug:
+        print(" [eval_event_btag()] - jets per event", n)
+        print(" [eval_event_btag()] - SF flat", sf_flat)
+        print(" [eval_event_btag()] - efficiency flat", eff)
+        print(" [eval_event_btag()] - event-weight flat", w_flat) 
+        print(" [eval_event_btag()] - event-weight (nevents, njets)", w_jagged) 
+
+    return ak.to_numpy(ak.prod(w_jagged, axis=1))
+
 

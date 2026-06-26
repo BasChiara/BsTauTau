@@ -107,7 +107,7 @@ def compute_trigger_sf(tree, channel, year):
     
     if channel == 'mu':
         
-        set_mu          = correctionlib.CorrectionSet.from_file(cfg_mu.get('file', None))
+        cset_mu          = correctionlib.CorrectionSet.from_file(cfg_mu.get('file', None))
         cset_mutrg      = cset_mu[cfg_mu.get('trg', None)]
         
         data_mu = tree.arrays(["mu1_pt", "mu1_eta"], library="np")
@@ -135,14 +135,74 @@ def compute_trigger_sf(tree, channel, year):
 def compute_top_pTreweight(tree, isttbar = False):
 
     new_branches = {}
-
+    # FIXME: add GenCand_status to take the initial top
     data = tree.arrays(["GenCand_pt", "GenCand_id"], library="ak") 
     new_branches['top_pt_weight']  = sf_utils.eval_toppt_sf(data["GenCand_pt"], data["GenCand_id"], isttbar)
 
     return new_branches
 
-def compute_btag_sf(tree, channel, year, wp="L"):
+def compute_btag_sf(tree, channel, year, jetbranch = "selected_jets_for_histo", wp="L", wp_val = 0.0499):
 
     new_branches = {}
+    # up/down variations
+    name_systematics = list(zip(
+        ["",        "Up", "Down", "_corrUp",       "_corrDown",       "_uncorrUp",       "_uncorrDown"],
+        ["central", "up", "down", "up_correlated", "down_correlated", "up_uncorrelated", "down_uncorrelated"]
+    ))
+    combinations = [
+        ('')
+    ]
+    
+    # jet
+    data        = tree.arrays([
+        jetbranch+'_pt',
+        jetbranch+'_eta',
+        jetbranch+'_hadronFlavour',
+        jetbranch+'_deepflavB',
+    ], library="ak")
 
+    jet_pt      = data[jetbranch+'_pt']
+    jet_eta     = data[jetbranch+'_eta']
+    jet_flav    = data[jetbranch+'_hadronFlavour']
+    jet_discr   = data[jetbranch+'_deepflavB']
+    
+    #  retrive SF .json
+    cfg_btag            = sf_inputs.object_sfs[year].get('btag', {})
+    cset_btag           = correctionlib.CorrectionSet.from_file(cfg_btag.get('file', None))
+    cset_btag_mujets    = cset_btag['deepJet_mujets']
+    cset_btag_incl      = cset_btag['deepJet_incl']
+
+    # split by true flavor
+    is_bcj      = (jet_flav != 0 )
+    is_lightj   = (jet_flav == 0 )
+    bcj_sfs, lightj_sfs = {}, {}
+    
+    for sys_suffix, syst in name_systematics:
+        bcj_sfs['btag_sf_bcjets'+sys_suffix]        = sf_utils.eval_btag(cset_btag_mujets, syst, wp, jet_flav, jet_eta, jet_pt, is_bcj)
+        lightj_sfs['btag_sf_ljets'+sys_suffix]      = sf_utils.eval_btag(cset_btag_incl,   syst, wp, jet_flav, jet_eta, jet_pt, is_lightj)
+    
+    # merge into event-weight
+    #print(" [compute_btag_sf()] nominal bc   SFs:", bcj_sfs['btag_sf_bcjets'])
+    #print(" [compute_btag_sf()] nominal udsg SFs:", lightj_sfs['btag_sf_ljets'])
+    new_branches['btag_sf'] = sf_utils.eval_event_btag( # nominal
+            jet_discr, wp, wp_val, 
+            bcj_sfs['btag_sf_bcjets'], lightj_sfs['btag_sf_ljets'],
+            jet_flav, jet_eta, jet_pt,
+            cfg_btag
+        )
+    for sys_suffix, _ in name_systematics:
+       if sys_suffix == "" : continue
+       new_branches['btag_sf_bc'+sys_suffix] = sf_utils.eval_event_btag( # bc SF variations
+            jet_discr, wp, wp_val, 
+            bcj_sfs['btag_sf_bcjets'+sys_suffix], lightj_sfs['btag_sf_ljets'],
+            jet_flav, jet_eta, jet_pt,
+            cfg_btag
+        )
+       new_branches['btag_sf_l'+sys_suffix] = sf_utils.eval_event_btag( # light SF variations
+            jet_discr, wp, wp_val, 
+            bcj_sfs['btag_sf_bcjets'], lightj_sfs['btag_sf_ljets'+sys_suffix],
+            jet_flav, jet_eta, jet_pt,
+            cfg_btag
+        )
+    
     return new_branches

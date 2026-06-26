@@ -6,6 +6,7 @@
 *.pdf
 *.png
 *.root
+!corrections/sf_toolkit/sf_maps/*.root
 */plots*
 
 */archive

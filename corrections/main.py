@@ -131,6 +131,7 @@ if __name__ == "__main__":
                 samples[ch][name], 
                 jet_sel
             )
+            
             #FIXME : check if anything missing for Bs signal
             if 'bstautau' in name: samples[ch][name] = data.defutils.define_bstautau_mask(samples[ch][name])
 
@@ -184,7 +185,14 @@ if __name__ == "__main__":
                 topsf_branches = sf.sf_computation.compute_top_pTreweight(tree, 'tt' in name or 'bstautau' in name)
                 new_branches.update(topsf_branches)
 
-                print(new_branches)
+                # b-tag scale factors
+                btagsf_branches = sf.sf_computation.compute_btag_sf(tree, ch, year, 
+                                                                    jetbranch   = "selected_jets_for_histo", 
+                                                                    wp          = data.selection.btag_chwp[ch][0],
+                                                                    wp_val      = data.selection.btag_chwp[ch][1]
+                                                                    )
+                new_branches.update(btagsf_branches)
+
                 
             # save new branches with SFs to a new root file
             sfs_outpath = os.path.join(tmp_outdir, f"tmp_{name}_onlysfs.root")
