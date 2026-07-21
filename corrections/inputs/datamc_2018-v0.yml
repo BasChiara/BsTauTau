@@ -1,0 +1,9 @@
+MC :
+  inpath_template: "/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_{channel}_2018_ParT"
+  outpath_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/legacy-v0/flat_ntuples/ntuples_{channel}_2018_ParT/sfs_applied"
+data:
+  inpath_template: "/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_{channel}_2018_ParT"
+  outpath_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/legacy-v0/flat_ntuples/ntuples_{channel}_2018_ParT/sfs_applied"
+common:
+  year: 2018
+  treename : Events

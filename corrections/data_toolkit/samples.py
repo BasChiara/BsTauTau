@@ -20,7 +20,7 @@ luminosity_year = { # in fb-1
         'D'         : -1,
         'E'         : -1,
         'total'     : 36.33,
-        'unc'       : 0.0120,
+        'relunc'    : 0.0120,
     },
     '2017' : {
         'B'         : -1,
@@ -29,7 +29,7 @@ luminosity_year = { # in fb-1
         'E'         : -1,
         'F'         : -1,
         'total'     : 41.53,
-        'unc'       : 0.0082,
+        'relunc'    : 0.0082,
     },
     '2018' : {
         'A'         : -1,
@@ -37,7 +37,7 @@ luminosity_year = { # in fb-1
         'C'         : -1,
         'D'         : -1,
         'total'     : 59.74,
-        'unc'       : 0.0084,
+        'relunc'    : 0.0084,
     },
 }
 years = list(luminosity_year.keys())
@@ -84,26 +84,26 @@ mc_samples_names = [
 ]
 
 files_names = dict()
-files_names['data_sm'] = 'SingleMuon'
-files_names['data_dm'] = 'DoubleMuon'
-files_names['data_eg'] = 'EGamma'
-files_names['data_meg'] = 'MuonEG'
-files_names['tt_fullylep'] = 'TTTo2L2Nu'
-files_names['tt_semilep'] = 'TTToSemileptonic'
-files_names['tt_had'] = 'TTToHadronic'
-files_names['w'] = 'W'
-files_names['wext'] = 'W_ext'
-files_names['dy'] = 'DY'
-files_names['dyext'] = 'DY_ext'
-files_names['ww'] = 'WW'
-files_names['wz'] = 'WZ'
-files_names['zz'] = 'ZZ'
-files_names['st_s'] = 'ST_s'
-files_names['st_t'] = 'ST_t_top'
-files_names['st_antit'] = 'ST_t_antitop'
-files_names['st_tw'] = 'ST_tW'
-files_names['st_antitw'] = 'ST_tW_antitop'
-files_names['bstautau'] = 'ttbarToBsToTauTau'
+files_names['data_sm']      = 'SingleMuon'
+files_names['data_dm']      = 'DoubleMuon'
+files_names['data_eg']      = 'EGamma'
+files_names['data_meg']     = 'MuonEG'
+files_names['tt_fullylep']  = 'TTTo2L2Nu'
+files_names['tt_semilep']   = 'TTToSemileptonic'
+files_names['tt_had']       = 'TTToHadronic'
+files_names['w']            = 'W'
+files_names['wext']         = 'W_ext'
+files_names['dy']           = 'DY'
+files_names['dyext']        = 'DY_ext'
+files_names['ww']           = 'WW'
+files_names['wz']           = 'WZ'
+files_names['zz']           = 'ZZ'
+files_names['st_s']         = 'ST_s'
+files_names['st_t']         = 'ST_t_top'
+files_names['st_antit']     = 'ST_t_antitop'
+files_names['st_tw']        = 'ST_tW'
+files_names['st_antitw']    = 'ST_tW_antitop'
+files_names['bstautau']     = 'ttbarToBsToTauTau'
 
 
 

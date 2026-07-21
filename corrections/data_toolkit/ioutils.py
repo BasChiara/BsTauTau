@@ -1,6 +1,9 @@
 import argparse
 import os, sys
 import ROOT
+import numpy as np
+import uproot
+import awkward as ak
 from . import samples
 
 
@@ -27,7 +30,6 @@ def get_genEventSumw(file_path):
     for entry in runs_tree:
         sumw += entry.genEventSumw
 
-    print(" [weight] the total enEventSumw is ",sumw)
     f.Close()
     return sumw
 
@@ -47,19 +49,53 @@ def load_mc_samples(indir, mc_samples_names, year, files_names, tree_name, neven
         print(f" + {file_name}")
 
         # Create RDataFrame for the sample
-        if nevents == None:
+        if not nevents:
             outsamples[k] = ROOT.RDataFrame(tree_name, file_name)
         else:
             outsamples[k] = ROOT.RDataFrame(tree_name, file_name).Range(nevents)
         
-        # normalization weight -> FIXME year dependency
-      
-        norm_weight = samples.luminosity_year[year]['total'] * samples._xsec_samples[k] * 1000 / get_genEventSumw(file_name)
-        outsamples[k] = outsamples[k].Define('norm_weight',     f'genWeight*{norm_weight}')
-        outsamples[k] = outsamples[k].Define('norm_weightUnc', f'norm_weight*sqrt(({samples.luminosity_year[year]["unc"]}*{samples.luminosity_year[year]["unc"]}) + ({samples._xsec_samples_relunc[k]}*{samples._xsec_samples_relunc[k]}))') # FIXME : use sum in quadrature expr
-
+        #  xsec in pb
+        norm_weight = samples.luminosity_year.get(str(year), {}).get('total', -1.) * (samples._xsec_samples[k]*1000) / get_genEventSumw(file_name)
+        norm_weight_relunc = norm_weight*np.sqrt( 
+            (samples.luminosity_year.get(str(year), {}).get('relunc', -1.))**2 + 
+            (samples._xsec_samples_relunc[k]/samples._xsec_samples[k])**2
+        )
+        outsamples[k] = outsamples[k].Define('norm_weight',         f'genWeight*{norm_weight}')
+        outsamples[k] = outsamples[k].Define('norm_weightUnc',      f'{norm_weight_relunc}')
+        print(f"[load_mc_samples()] events normalized to crossection : {outsamples[k].Sum('norm_weight').GetValue():.1f}")
     
     return outsamples
+
+def load_MCuproot(indir, sample_name, year, files_names, tree_name, nevents = None):
+    """
+        Load a single MC sample using uproot, apply weights, and trigger selections.
+    """
+
+    file_name = os.path.join(indir, files_names[sample_name]+'.root')
+    checkpath(file_name, isdir=False, mustexist=True)
+    print(f" + {file_name}")
+
+    # Open the ROOT file and access the tree
+    with uproot.open(file_name) as f:
+        tree = f[tree_name]
+        if nevents is not None:
+            df = tree.arrays(library="ak", entry_stop=nevents)
+        else:
+            df = tree.arrays(library="ak")
+
+    # Calculate normalization weight
+    norm_weight = samples.luminosity_year.get(str(year), {}).get('total', -1.) * (samples._xsec_samples[sample_name]*1000) / get_genEventSumw(file_name)
+    norm_weight_relunc = norm_weight*np.sqrt( 
+        (samples.luminosity_year.get(str(year), {}).get('relunc', -1.))**2 + 
+        (samples._xsec_samples_relunc[sample_name]/samples._xsec_samples[sample_name])**2
+    )
+    
+    # Add normalization weights to the DataFrame
+    df['norm_weight'] = df['genWeight'] * norm_weight
+    df['norm_weightUnc'] = norm_weight_relunc
+    print(f"[load_MCuproot()] events normalized to crossection : {ak.sum(df['norm_weight']):.1f}")
+
+    return df
 
 def load_data_samples(ch, data_samples, files_names, tree_name, tree_dir_data, trigger_selections, trigger_exclusions, eras_2018, nevents = None, use_filtered_data=False, tree_dir_filtered=None):
     """Load data samples and apply trigger selections and exclusions."""
