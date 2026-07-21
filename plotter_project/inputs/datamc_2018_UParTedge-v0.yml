@@ -1,0 +1,10 @@
+MC :
+  inpath_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/"
+  inpath_template_wsfs: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/sfs_applied"
+  inpath_template_btag_sfs: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/sfs_applied"
+  plotter_histos : "/afs/cern.ch/work/c/cbasile/BsTauTau_ttbar/analysis/BsTauTau/plotter_project/plots/15Jul2026_12h59m36s/histograms-ext.root"
+data:
+  inpath_template: "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/"
+common:
+  year: 2018
+  treename : Events

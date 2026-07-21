@@ -1,0 +1,10 @@
+MC :
+  inpath_template: "/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_{channel}_2018_ParT"
+  inpath_template_wsfs: "/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_{channel}_2018_ParT/wsfs_snapshots"
+  inpath_template_btag_sfs: "/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_{channel}_2018_ParT/btag_sfs_snapshots"
+  plotter_histos : "/afs/cern.ch/work/c/cbasile/BsTauTau_ttbar/analysis/BsTauTau/plotter_project/plots/14Jul2026_20h38m42s/histograms.root"
+data:
+  inpath_template: "/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_{channel}_2018_ParT"
+common:
+  year: 2018
+  treename : Events

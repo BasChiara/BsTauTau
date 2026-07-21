@@ -26,7 +26,7 @@ import os
 import correctionlib
 correctionlib.register_pyroot_binding()
 
-nevents = None # Set to None to process all events, or specify a number for a limited range
+nevents = 1000 # Set to None to process all events, or specify a number for a limited range
 
 ROOT.gROOT.SetBatch()   
 ROOT.gStyle.SetOptStat(0)
@@ -68,6 +68,7 @@ def parse_arguments():
     parser.add_argument('--save_filtered_data', action='store_true', default=False, help='Save filtered/processed data for faster reprocessing')
     parser.add_argument('--use_filtered_data', action='store_true', default=False, help='Use previously saved filtered data instead of processing from scratch')
     parser.add_argument('--plot_part_selections', action='store_true', default=False, help='Enable ParT sequential cuts plots (ParTRawTauhtaumu_frac > 0.6)')
+    parser.add_argument('--mc_only', action='store_true', default=False, help='Skip data samples and run on MC only')
     parser.add_argument('--test', action='store_true', default=False, help='Run a quick test with onbly signal sample')
     return parser.parse_args()
 
@@ -99,6 +100,7 @@ def main():
     save_filtered_data = args.save_filtered_data
     use_filtered_data = args.use_filtered_data
     plot_part_selections = args.plot_part_selections
+    mc_only = args.mc_only
     
     
     # Initialize SFs
@@ -135,12 +137,15 @@ def main():
             tree_dir_filtered = './tmp_out/filtered_data_snapshots/'
             used_mc_samples_names = info_samples.mc_samples_names[:2]  # Only use the first MC sample (e.g., 'bstautau') for testing
         else:
-            tree_dir          = '/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/test2018-v2/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
-            #tree_dir          = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
-            tree_dir_wsfs     = '%s/wsfs_snapshots/'%(tree_dir)
-            tree_dir_btag_sfs = '%s/btag_sfs_snapshots-sys/'%(tree_dir)
-            tree_dir_filtered = '%s/filtered_data_snapshots/'%(tree_dir)
-            used_mc_samples_names = info_samples.mc_samples_names  # Use all MC samples including 'bstautau'
+            #tree_dir               = "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/legacy-v0/flat_ntuples/ntuples_{channel}_2018_ParT/".format(channel=ch)
+            #tree_dir                = "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/".format(channel=ch)
+            tree_dir                = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
+            tree_dir_wsfs           = '%s/wsfs_snapshots/'%(tree_dir)
+            #tree_dir_wsfs           = '%s/sfs_applied/'%(tree_dir)
+            tree_dir_btag_sfs       = '%s/btag_sfs_snapshots/'%(tree_dir)
+            #tree_dir_btag_sfs       = '%s/sfs_applied/'%(tree_dir)
+            tree_dir_filtered       = '%s/filtered_data_snapshots/'%(tree_dir)
+            used_mc_samples_names   = info_samples.mc_samples_names   # Use all MC samples including 'bstautau'
 
         print(f"Using tree directory: {tree_dir}")
         samples[ch] = dict()
@@ -151,13 +156,16 @@ def main():
         samples[ch].update(mc_samples)
 
         # Handle data samples
-        print("\n====== Loading Data Samples ======")
-        data_samples, chains = load_data_samples(ch, info_samples.data_samples_names, info_samples.files_names, tree_name, tree_dir, trigger_selections, trigger_exclusions, info_samples.eras_2018, nevents, use_filtered_data, tree_dir_filtered)
-        samples[ch].update(data_samples)
+        if mc_only:
+            print("\n====== Skipping Data Samples (--mc_only) ======")
+        else:
+            print("\n====== Loading Data Samples ======")
+            data_samples, chains = load_data_samples(ch, info_samples.data_samples_names, info_samples.files_names, tree_name, tree_dir, trigger_selections, trigger_exclusions, info_samples.eras_2018, nevents, use_filtered_data, tree_dir_filtered)
+            samples[ch].update(data_samples)
         
         print("\n====== Processing Samples ======")
         for k, v in samples[ch].items():
-           
+            
             minimum_jet_conditions = '(j_pt > 20 & abs(j_eta)< 2.5 & j_jetid>=2)' # jet pt >20 for btagging SFs
 
             if 'bstautau' in k:
@@ -297,7 +305,7 @@ def main():
         
         if make_histos:
             print("Setting up sample-based histograms...")
-            temp_hists = initialize_histograms(histos, samples, ch)
+            temp_hists = initialize_histograms(histos, samples, ch, sys_uncertainty=False)
             if flavor:
                 print("Setting up flavor-based histograms...")
                 temp_flavor_hists = initialize_flavor_histograms(histos_flavor, samples, ch)
@@ -307,7 +315,7 @@ def main():
         
         if make_histos and temp_hists:
             print("Processing sample-based histograms...")
-            process_histograms(histos, temp_hists, samples, ch, info_samples.colours, label, info_samples.titles, main_pad, ratio_pad, c1, blinding)
+            process_histograms(histos, temp_hists, samples, ch, info_samples.colours, label, info_samples.titles, main_pad, ratio_pad, c1, blinding, mconly=mc_only)
 
         if flavor and temp_flavor_hists:
             print("Processing flavor-based histograms...")
