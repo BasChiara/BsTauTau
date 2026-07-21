@@ -13,6 +13,7 @@
 # py cache
 *__pycache__
 *.pyc
+*.__afs*
 
 # condor
 *cbasile.cc

@@ -1,6 +1,7 @@
 # Preselection and MC correction for $Bs\to\tau\tau$
 
-## Onetime setup
+## Setup
+### Ontime setup
 ```
 cmsrel CMSSW_13_0_10
 cd CMSSW_13_0_10/src/
@@ -9,31 +10,33 @@ cd PhysicsTools/NanoAODTools
 cmsenv
 scram b
 cd ../../../../ 
-git clone --recursive git@github.com:friti/BsTauTau.git --branch bstautau-dev
+git clone --recursive git@github.com:BasChiara/BsTauTau.git --branch bstautau-dev
 cd BsTauTau/corrections/
 ```
-
-## At login
+### At login
 ```
 cd CMSSW_13_0_10/src/PhysicsTools/NanoAODTools
 cmsenv
 cd ../../../../BsTauTau/corrections/
 ```
 
-## Main usage: apply preselection and SF corrections
+## Main usage: apply $\bar tt$ preselection and SF corrections
 
 ```bash
-python main.py --input inputs/datamc_2018_test-v2.yml [--outdirectory <path>] [--channels <ch1> <ch2> ...] [--test]
+python main.py --input <inputs/data-info.yml> [--outdirectory <path>] [--channels <ch1> <ch2> ...] [--test]
 ```
 
 | Option | Short | Default | Description |
 |---|---|---|---|
-| `--input` | `-i` | required | `.yml` file with input ntuple locations and metadata |
+| `--input` | `-i` | required | `.yml` file with input ntuple locations and metadata from `inputs/` folder |
 | `--outdirectory` | `-o` | from `.yml` | Output directory for corrected ntuples (overrides `.yml` value) |
-| `--channels` | | `emu` | One or more decay channels to process |
-| `--test` | `-t` | off | Test mode: runs on a single MC sample |
+| `--channels` | | `emu` | One or more decay channels to process. Supported channels: `mu`, `e`, `emu`, `mumu`, `ee` and space-separated list of any subset. |
+| `--test` | `-t` | off | Test mode: runs on a single MC sample and few events |
 
-Supported channels: `mu`, `e`, `emu`, `mumu`, `ee`.
+**Example:** running on custom-nanoAODv9 ntuples with ParT-tagger inference 
+```bash
+python3 main.py --input inputs/datamc_2018-v0.yml --channels emu ee mumu e mu
+```
 
 ### Input configuration file
 
@@ -52,8 +55,9 @@ common:
 ```
 
 `{channel}` is substituted at runtime with the channel being processed.
-See `inputs/datamc_TEMPLATE.yml` for a blank template and `inputs/datamc_2018_test-v2.yml` for a concrete example.
+See `inputs/datamc_TEMPLATE.yml` for a blank template and `inputs/datamc_2018-v0.yml` for a concrete example.
 
+<!---
 ## Processing pipeline
 
 For each channel and MC sample, `main.py` runs the following steps in order:
@@ -86,7 +90,7 @@ Output files are named `<sample>_wsfs.root` and written to the `outpath_template
 | `w` / `wext` | `W` / `W_ext` | W+jets |
 | `dy` | `DY` | Drell-Yan |
 | `bstautau` | `ttbarToBsToTauTau` | Signal: $t\bar{t} \to B_s \to \tau\tau$ |
-
+--->
 ## Additional scripts
 
 - **`genmatching.py`** — studies the efficiency of matching $B_s$ to b-tagged jets at generator level (CHS and PUPPI jets). Run with `--input` pointing to a signal ntuple.
