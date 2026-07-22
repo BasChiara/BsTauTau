@@ -4,7 +4,8 @@ import sf_cpp_functions as sf_cpp
 
 
 jet_attributes_global = [
-        "pt", "eta", "phi", "m", "puid", "jetid", "deepflavB", "hadronFlavour"]
+        #"pt", "eta", "phi", "m", "puid", "jetid", "deepflavB", "hadronFlavour"]
+        "pt", "eta", "phi", "m", "puid", "deepflavB", "hadronFlavour"] #nanov15
 
 jet_attributes_part = ["ParTRawB", "ParTRawC", "ParTRawOther", "ParTRawSingletau",
         "ParTRawTauhtaue", "ParTRawTauhtauh", "ParTRawTauhtaumu"]
@@ -88,7 +89,7 @@ def define_jets_with_minimum_selection_for_histos(samples, is_bstautau, bstautau
 
     if is_bstautau:
         for attr in jet_attributes:
-            samples = samples.Define(f"selected_jets_for_histo_{attr}", f"selected_jets_{attr}[{bstautau_conditions['general']}]")
+            samples = samples.Define(f"selected_jets_for_histo_{attr}", f"selected_jets_{attr}") #[{bstautau_conditions['general']}]")
 
     else:
         for attr in jet_attributes:
@@ -313,11 +314,12 @@ def build_weight_string(k, files_names, options):
     Returns:
         str: Weight expression (e.g., "norm_weight*L1PreFiringWeight_Nom*puWeight*tot_sf_weight").
     """
-    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight']
+    #weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight'] # nanov9
+    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom'] # nanov15
 
     print(f"[{k}] Applying top pT reweighting")
-    if 'TTT' in files_names.get(k, '') or 'BsToTauTau' in files_names.get(k, ''):
-        weight_terms.append('top_pt_weight')
+    #if 'TTT' in files_names.get(k, '') or 'BsToTauTau' in files_names.get(k, ''): #nanov15
+    #    weight_terms.append('top_pt_weight')
 
     if options.compute_sfs or options.use_ntuples_with_sfs:
         print(f"[{k}] Applying scale factors")

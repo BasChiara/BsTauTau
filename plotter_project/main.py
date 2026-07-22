@@ -26,7 +26,7 @@ import os
 import correctionlib
 correctionlib.register_pyroot_binding()
 
-nevents = 1000 # Set to None to process all events, or specify a number for a limited range
+nevents = None # Set to None to process all events, or specify a number for a limited range
 
 ROOT.gROOT.SetBatch()   
 ROOT.gStyle.SetOptStat(0)
@@ -137,15 +137,16 @@ def main():
             tree_dir_filtered = './tmp_out/filtered_data_snapshots/'
             used_mc_samples_names = info_samples.mc_samples_names[:2]  # Only use the first MC sample (e.g., 'bstautau') for testing
         else:
-            #tree_dir               = "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/legacy-v0/flat_ntuples/ntuples_{channel}_2018_ParT/".format(channel=ch)
-            #tree_dir                = "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/".format(channel=ch)
-            tree_dir                = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch)
-            tree_dir_wsfs           = '%s/wsfs_snapshots/'%(tree_dir)
-            #tree_dir_wsfs           = '%s/sfs_applied/'%(tree_dir)
-            tree_dir_btag_sfs       = '%s/btag_sfs_snapshots/'%(tree_dir)
-            #tree_dir_btag_sfs       = '%s/sfs_applied/'%(tree_dir)
+            #tree_dir               = "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/legacy-v0/flat_ntuples/ntuples_{channel}_2018_ParT/".format(channel=ch) # nanov9
+            tree_dir                = "/eos/cms/store/group/phys_bphys/cbasile/BsTauTau-ttbar/nanov15_skim/{channel}_2018-testV0/".format(channel=ch) # nanov15
+            #tree_dir                = '/eos/cms/store/cmst3/group/bpark/friti/bstautau/flat_ntuples/ntuples_%s_2018_ParT'%(ch) # nanov9
+            #tree_dir_wsfs           = '%s/wsfs_snapshots/'%(tree_dir) # nanov9
+            tree_dir_wsfs           = '%s/sfs_applied/'%(tree_dir) # nanov15
+            #tree_dir_btag_sfs       = '%s/btag_sfs_snapshots/'%(tree_dir) # nanov9
+            tree_dir_btag_sfs       = '%s/sfs_applied/'%(tree_dir) # nanov15
             tree_dir_filtered       = '%s/filtered_data_snapshots/'%(tree_dir)
-            used_mc_samples_names   = info_samples.mc_samples_names   # Use all MC samples including 'bstautau'
+            #used_mc_samples_names   = info_samples.mc_samples_names   # Use all MC samples including 'bstautau' # nanov9
+            used_mc_samples_names   = ['bstautau', 'tt_fullylep', 'tt_semilep']  # Use only specific MC samples for testing # nanov15
 
         print(f"Using tree directory: {tree_dir}")
         samples[ch] = dict()
@@ -166,7 +167,8 @@ def main():
         print("\n====== Processing Samples ======")
         for k, v in samples[ch].items():
             
-            minimum_jet_conditions = '(j_pt > 20 & abs(j_eta)< 2.5 & j_jetid>=2)' # jet pt >20 for btagging SFs
+            #minimum_jet_conditions = '(j_pt > 20 & abs(j_eta)< 2.5 & j_jetid>=2)' # jet pt >20 for btagging SFs
+            minimum_jet_conditions = '(j_pt > 20 & abs(j_eta)< 2.5)' # jet pt >20 for btagging SFs #nanov15
 
             if 'bstautau' in k:
                 bstautau_conditions = {
@@ -305,7 +307,7 @@ def main():
         
         if make_histos:
             print("Setting up sample-based histograms...")
-            temp_hists = initialize_histograms(histos, samples, ch, sys_uncertainty=False)
+            temp_hists = initialize_histograms(histos_test, samples, ch, sys_uncertainty=False)
             if flavor:
                 print("Setting up flavor-based histograms...")
                 temp_flavor_hists = initialize_flavor_histograms(histos_flavor, samples, ch)
@@ -315,7 +317,7 @@ def main():
         
         if make_histos and temp_hists:
             print("Processing sample-based histograms...")
-            process_histograms(histos, temp_hists, samples, ch, info_samples.colours, label, info_samples.titles, main_pad, ratio_pad, c1, blinding, mconly=mc_only)
+            process_histograms(histos_test, temp_hists, samples, ch, info_samples.colours, label, info_samples.titles, main_pad, ratio_pad, c1, blinding, mconly=mc_only)
 
         if flavor and temp_flavor_hists:
             print("Processing flavor-based histograms...")

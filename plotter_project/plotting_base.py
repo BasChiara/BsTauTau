@@ -189,6 +189,8 @@ class PlottingBase:
         for obj in pad.GetListOfPrimitives():
             if hasattr(obj, 'SetMaximum'):
                 obj.SetMaximum(maximum)
+            if hasattr(obj, 'SetMinimum'):
+                obj.SetMinimum(1e-1)
     
     def create_root_file(self, file_path):
         """Create ROOT file with standard compression settings."""
