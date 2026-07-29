@@ -115,7 +115,7 @@ trigger_exclusions = {
 unique_minjet_cond = '&&'.join([
     '(j_pt > 20)', # b-tagging SFs (JEC pT>10 GeV)
     '(abs(j_eta)< 2.5)',
-    '(j_jetid>=2)',
+    #'(j_jetid>=2)',
 ])
 min_jet_selection = {
     'emu'   : unique_minjet_cond,

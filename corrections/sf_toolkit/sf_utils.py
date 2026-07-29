@@ -146,8 +146,10 @@ def eval_toppt_sf(genpt, genid, isttbar):
     is_atop = (genid == -6)
     # FIXME: for some reason there are 2 top and 2 anti-top
     #           pick the second one for conformity but should have status flag
-    top_pt  = np.minimum(ak.to_numpy(genpt[is_top][..., -1]),  MAX_tpT)
-    atop_pt = np.minimum(ak.to_numpy(genpt[is_atop][..., -1]), MAX_tpT)
+    # Use ak.firsts on reversed subarrays to safely get the last element;
+    # fill_none handles events where no top/antitop is found.
+    top_pt  = np.minimum(ak.to_numpy(ak.fill_none(ak.firsts(genpt[is_top][:,  ::-1], axis=1), MAX_tpT)), MAX_tpT)
+    atop_pt = np.minimum(ak.to_numpy(ak.fill_none(ak.firsts(genpt[is_atop][:, ::-1], axis=1), MAX_tpT)), MAX_tpT)
 
     return top_pt_weight(top_pt) * top_pt_weight(atop_pt)
 

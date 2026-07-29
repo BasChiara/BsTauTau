@@ -119,7 +119,10 @@ def get_data_sample_name(ch):
 
 
 def get_samples_for_legend(samples, ch, data_smpl):
-    return [str(k) for k in samples[ch] if 'data' not in k and 'ext' not in k] + [data_smpl]
+    result = [str(k) for k in samples[ch] if 'data' not in k and 'ext' not in k]
+    if data_smpl is not None:
+        result.append(data_smpl)
+    return result
 
 
 def style_histograms(temp_hists, k, v, colours):
@@ -259,7 +262,7 @@ def save_plot_versions(c1, label, ch, k, main_pad, scale_suffix=""):
     c1.Update()
 
 
-def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, main_pad, ratio_pad, c1, blinding):
+def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, main_pad, ratio_pad, c1, blinding, mconly=False):
     # Create ROOT file for saving histograms with compression
     root_file_path = f'plots/{label}/histograms.root'
     root_file = ROOT.TFile(root_file_path, 'UPDATE', "", ROOT.kLZMA)  # Use LZMA compression
@@ -271,7 +274,7 @@ def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, 
     
     for i, (k, v) in enumerate(histos[ch].items()):
         c1.cd()
-        data_smpl = get_data_sample_name(ch)
+        data_smpl = get_data_sample_name(ch) if not mconly else None
         samples_for_legend = get_samples_for_legend(samples, ch, data_smpl)
         leg = create_legend(temp_hists, samples_for_legend, titles)
 
@@ -332,13 +335,10 @@ def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, 
         ths1.Draw('hist same')
 
         stats = draw_stat(ths1)
-        data_ths.GetStack().Last().SetLineColor(ROOT.kBlack)
-        data_ths.GetStack().Last().Draw('EP same')
-
-        # Print data integral for debugging/verification
-        if data_ths.GetStack() and data_ths.GetStack().Last():
-            data_integral = data_ths.GetStack().Last().Integral()
-            #print(f"Data histogram integral for {k}: {data_integral:.1f}")
+        has_data = bool(data_ths.GetStack() and data_ths.GetStack().Last())
+        if has_data:
+            data_ths.GetStack().Last().SetLineColor(ROOT.kBlack)
+            data_ths.GetStack().Last().Draw('EP same')
 
         #leg.AddEntry(stats, 'stat. unc.', 'F')
         leg.AddEntry(stats, 'tot. unc.', 'F')
@@ -357,12 +357,15 @@ def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, 
         CMS_lumi(main_pad, 4, 0, cmsText='CMS', extraText=' Preliminary', lumi_13TeV='L = 59.7 fb^{-1}')
         main_pad.cd()
 
-        ratio = data_ths.GetStack().Last().Clone()
-        ratio.Divide(stats)
-
-        ratio_stats, norm_stack, line, ratio = compute_ratio_plot(temp_hists[k], ratio, stats, ratio_pad)
+        if has_data:
+            ratio = data_ths.GetStack().Last().Clone()
+            ratio.Divide(stats)
+            ratio_stats, norm_stack, line, ratio = compute_ratio_plot(temp_hists[k], ratio, stats, ratio_pad)
+        else: # fill with dummy histogram to avoid crash
+            ratio = ROOT.TH1F('ratio', '', 1, x_min, x_max)
+            ratio.Fill(0.5, 1.)
+            ratio_stats, norm_stack, line, ratio = compute_ratio_plot(temp_hists[k], ratio, stats, ratio_pad)
         ratio_pad.cd()
-
         norm_stack.Draw('hist same')
         ratio_stats.Draw('E2')
         norm_stack.Draw('hist same')
@@ -388,23 +391,25 @@ def process_histograms(histos, temp_hists, samples, ch, colours, label, titles, 
             # Redraw the main plot components on the fixed frame
             ths1.Draw('hist same')
             stats.Draw('E2 SAME')
-            data_ths.GetStack().Last().Draw('EP same')
+            if has_data:
+                data_ths.GetStack().Last().Draw('EP same')
             leg.Draw('same')
-            
+
             # Draw BsTauTau WITH scaling (this will modify the histogram permanently)
             style_and_draw_bstautau(temp_hists, k, ths1, colours, scale_to_mc=True)
-            
+
             CMS_lumi(main_pad, 4, 0, cmsText='CMS', extraText=' Preliminary', lumi_13TeV='L = 59.7 fb^{-1}')
-            
+
             # Redraw ratio plot (same as before)
-            ratio_pad.cd()
-            ratio_pad.Clear()
-            norm_stack.Draw('hist same')
-            ratio_stats.Draw('E2')
-            norm_stack.Draw('hist same')
-            ratio_stats.Draw('E2 same')
-            line.Draw('same')
-            ratio.Draw('EP same')
+            if has_data:
+                ratio_pad.cd()
+                ratio_pad.Clear()
+                norm_stack.Draw('hist same')
+                ratio_stats.Draw('E2')
+                norm_stack.Draw('hist same')
+                ratio_stats.Draw('E2 same')
+                line.Draw('same')
+                ratio.Draw('EP same')
             
             # Save scaled version in all formats (linear and log)
             save_plot_versions(c1, label, ch, k, main_pad, scale_suffix="_scaled")

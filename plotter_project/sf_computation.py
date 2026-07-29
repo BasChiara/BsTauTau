@@ -204,10 +204,10 @@ def compute_all_scale_factors(samples, ch, year, k, files_names):
     print(f"\ttrigger scale factors")
     samples = compute_trigger_scale_factors(samples, year, ch)
 
-    # Compute Jet energy corrections
-    declare_JET_cpp_functions() # porkaround
-    print(f"\tjet energy scale and resolution factors")
-    samples = compute_JESR_scale_factors(samples, ch, year, k, files_names)
+    # Compute Jet energy corrections (broken)
+    #declare_JET_cpp_functions() # porkaround
+    #print(f"\tjet energy scale and resolution factors")
+    #samples = compute_JESR_scale_factors(samples, ch, year, k, files_names)
     
     # Compute additional scale factors
     print(f"\tadditional scale factors")

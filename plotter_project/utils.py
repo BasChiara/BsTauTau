@@ -313,10 +313,11 @@ def build_weight_string(k, files_names, options):
     Returns:
         str: Weight expression (e.g., "norm_weight*L1PreFiringWeight_Nom*puWeight*tot_sf_weight").
     """
-    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight',]
+    weight_terms = ['norm_weight', 'L1PreFiringWeight_Nom', 'puWeight']
 
     print(f"[{k}] Applying top pT reweighting")
-    weight_terms.append('top_pt_weight')
+    if 'TTT' in files_names.get(k, '') or 'BsToTauTau' in files_names.get(k, ''):
+        weight_terms.append('top_pt_weight')
 
     if options.compute_sfs or options.use_ntuples_with_sfs:
         print(f"[{k}] Applying scale factors")
@@ -326,8 +327,7 @@ def build_weight_string(k, files_names, options):
 
     elif options.compute_btag_sfs or options.use_ntuples_with_btag_sfs:
         print(f"[{k}] Applying SFs and btag scale factors")
-        weight_terms.extend(['tot_sf_weight', 'btag_event_weight']) #both SF and btagging SFs are applied
-
+        weight_terms.extend(['tot_sf_weight', 'btag_event_weight']) #both SF and btagging SFs are applied 
     return '*'.join(weight_terms)
 
 def define_total_weight(sample, k, files_names, options):

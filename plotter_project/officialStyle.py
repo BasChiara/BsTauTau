@@ -11,8 +11,8 @@ def officialStyle(style, tgaxis=None):
     style.SetCanvasColor(0)
     style.SetCanvasBorderSize(10)
     style.SetCanvasBorderMode(0)
-    style.SetCanvasDefH(700)
-    style.SetCanvasDefW(700)
+    style.SetCanvasDefH(800)
+    style.SetCanvasDefW(800)
     style.SetCanvasDefX(100)
     style.SetCanvasDefY(100)
 

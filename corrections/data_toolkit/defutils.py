@@ -1,9 +1,12 @@
 import ROOT
 from .defcpp_functions import *
+from .defak_functions import * 
 
 
 jet_attributes_global = [
-        "pt", "eta", "phi", "m", "puid", "jetid", "deepflavB", "hadronFlavour"]
+        "pt", "eta", "phi", "m", "puid", 
+        #"jetid", 
+        "deepflavB", "hadronFlavour"]
 
 jet_attributes_part = ["ParTRawB", "ParTRawC", "ParTRawOther", "ParTRawSingletau",
         "ParTRawTauhtaue", "ParTRawTauhtauh", "ParTRawTauhtaumu"]
@@ -22,6 +25,25 @@ def define_bstautau_mask(samples):
                     .Define("SigJetMask", "maskFromIndices(SigJetIdx, selected_jets_pt.size())")
                 )
     return samples
+
+def match_BsToJets(data, 
+                   sigflag = 'GenCand_isBsTauTau',
+                   jetcollection = 'jets',
+                   btag_wp=btag_thresholds['loose'], 
+                   max_dr=0.4, min_jet_pt=20.0, max_jet_eta=2.5, 
+                   debug = False
+):
+    bs_indices       = awfindIndicesOfBsTauTau(data[sigflag])
+    mask, mtch_dR    = awmatchSignalBsToJets(bs_indices, 
+                                         data['GenCand_eta'], data[f'GenCand_phi'], 
+                                         data[f'{jetcollection}_pt'], data[f'{jetcollection}_eta'], data[f'{jetcollection}_phi'], 
+                                         data[f'{jetcollection}_deepflavB'], btag_wp, 
+                                         max_dr, min_jet_pt, max_jet_eta
+                                         )
+    
+    data[f'{jetcollection}_SigJetMask'] = mask
+    data[f'{jetcollection}_SigDR']      = mtch_dR   
+    return data
 
 def define_bstautau_taudecaymodes_mask(samples):
 
