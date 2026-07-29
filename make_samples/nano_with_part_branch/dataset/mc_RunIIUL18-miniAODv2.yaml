@@ -4,15 +4,89 @@ common:
     globaltag: 150X_mc2018_realistic_v1  
 
 samples:
-  TTToSemiLeptonic:
-    dataset: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM
-    isMC: True
-    splitting: 2
-  TTTo2L2Nu:
-    dataset: /TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
-    isMC: True
-    splitting: 2
+  # SIGNAL
   ttbarToBsToTauTau:
     dataset: /ttbarToBsToTauTau_BsFilter_TauTauFilter_TuneCP5_13TeV-pythia8-evtgen/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM
     isMC: True
     splitting: 1
+    name : bstautau
+  # TTBAR
+  TTToSemiLeptonic:
+    dataset: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM
+    isMC: True
+    splitting: 2
+    name : tt_semilep
+  TTTo2L2Nu:
+    dataset: /TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : tt_fullylep
+  TTToHadronic:
+    dataset: /TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : tt_had
+  # SINGLE TOP
+  ST_s:
+    dataset: /ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : STs 
+  ST_antit:
+    dataset: /ST_t-channel_antitop_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : STt_atop
+  ST_t:
+    dataset: /ST_t-channel_top_5f_InclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : STt_top
+  ST_antitw:
+    dataset: /ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : STtW_atop
+  ST_tw:
+    dataset: /ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : STtW
+  # DIBOSON
+  WW:
+    dataset: /WW_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : ww
+  WZ:
+    dataset: /WZ_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : wz
+  ZZ:
+    dataset: /ZZ_TuneCP5_13TeV-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : zz
+  # DY
+  DY:
+    dataset: /DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : dy
+  DYext:
+    dataset: /DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : dyext
+  # W+jets
+  W: 
+    dataset: /WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : w
+  Wext:
+    dataset: /WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2/MINIAODSIM
+    isMC: True
+    splitting: 1
+    name : wext
