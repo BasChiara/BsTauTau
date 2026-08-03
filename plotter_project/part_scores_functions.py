@@ -31,7 +31,6 @@ def define_combined_scores(
         frac_var = f"{tau_var}_frac"
         frac_expr = f"{tau_var} / ({tau_var} + btagged_loose_jets_pt_above_20_for_histo_part_bkg_sum)"
         samples = samples.Define(frac_var, frac_expr) # define just the fraction (no mask on bstautau)
-        print(f"Defined fraction variable: {frac_var} with expression: {frac_expr}")
 
         # Apply decay-mode-specific mask if bstautau and masks provided
         if is_bstautau:
