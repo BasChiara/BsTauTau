@@ -5,14 +5,17 @@
 import os, sys
 import multiprocessing
 import numpy as np
+import time
 import argparse
+
 import ROOT
 ROOT.gROOT.SetBatch()   
 ROOT.gStyle.SetOptStat(0)
 ROOT.gErrorIgnoreLevel = ROOT.kWarning  # Suppresses Info messages, keeps Warning and Error
 import uproot
-BATCH_SIZE  = int(1e4)
+BATCH_SIZE  = int(1e5) # number of events to process in each chunk for SF computation
 NTHREADS    = multiprocessing.cpu_count()
+
 # custom imports
 import data_toolkit as data
 import sf_toolkit as sf
@@ -69,6 +72,8 @@ def parse_arguments():
 
 if __name__ == "__main__":
 
+    init_time = time.time()
+
     # process arguments
     args = parse_arguments()
     
@@ -124,7 +129,7 @@ if __name__ == "__main__":
         utils.logger.print_bold(f"\n>>> PROCESSING SAMPLES")
         # --> LOOP ON SAMPLES
         for name, rdf in samples[ch].items():
-            print(f"\n>[{name}]")
+            print(f"\n------ {name} ------")
             samples[ch][name] = samples[ch][name].Define("entry_idx", "rdfentry_")
         
             # trigger selections (OR of the requirements in data)
@@ -235,7 +240,8 @@ if __name__ == "__main__":
                         writer = outf[_tree_name]
                     else:
                         writer.extend(out_chunk)
-                print(out_chunk.keys())
+                if _testmode_:
+                    print(out_chunk.keys())
             utils.logger.print_info(f"[TMP] saved sample with SFs to {sfs_outpath}")
             
             # --- post-loop consistency check: no loss, no duplication, same events ---
@@ -257,7 +263,8 @@ if __name__ == "__main__":
                                     f"{data.samples.files_names[name]}.root")
 
             # Disable MT for the final merge
-            ROOT.DisableImplicitMT()
+            if not _testmode_:
+                ROOT.DisableImplicitMT()
 
             sf_file  = ROOT.TFile.Open(sfs_outpath)
             sf_tree  = sf_file.Get(_tree_name)
@@ -278,8 +285,12 @@ if __name__ == "__main__":
                 os.remove(sfs_outpath)
                 utils.logger.print_info(f"[CLEANUP] Removed temporary files {tmp_outpath} and {sfs_outpath}")
             else:
-                utils.logger.print_error(f"[ERROR] Failed to save final processed sample to {outpath}")
+                utils.logger.print_error(f"Failed to save final processed sample to {outpath}")
                 sys.exit(1)
             
             if not _testmode_:
                 ROOT.EnableImplicitMT(NTHREADS)  # restore for next sample
+
+    end_time = time.time()
+    elapsed_time = end_time - init_time
+    utils.logger.print_bold(f"\n>>> DONE in {elapsed_time:.2f}'' ({elapsed_time/60:.2f}')")

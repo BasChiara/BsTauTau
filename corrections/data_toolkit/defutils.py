@@ -4,12 +4,9 @@ from .defak_functions import *
 
 
 jet_attributes_global = [
-        "pt", "eta", "phi", "m", "puid", 
-        #"jetid", 
-        "deepflavB", "hadronFlavour"]
+        "pt", "eta", "phi", "m", "puid", "jetid", "deepflavB", "hadronFlavour"]
 
-jet_attributes_part = ["ParTRawB", "ParTRawC", "ParTRawOther", "ParTRawSingletau",
-        "ParTRawTauhtaue", "ParTRawTauhtauh", "ParTRawTauhtaumu"]
+jet_attributes_part = ["ParTRawB", "ParTRawC", "ParTRawOther", "ParTRawSingletau", "ParTRawTauhtaue", "ParTRawTauhtauh", "ParTRawTauhtaumu"]
 
 # Define b-tagging thresholds
 btag_thresholds = {
